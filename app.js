@@ -24,13 +24,12 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-/** =========================
- *  TEACHER PIN (LOCAL ONLY)
- *  =========================
- *  - This PIN protects PW reveal + edits.
- *  - Stored as SHA-256 hash in localStorage.
- *  - This is NOT bank-level security (it’s classroom privacy).
- */
+const DEFAULT_PIN = "1234"; 
+
+if (!localStorage.getItem("teacher_pin_hash_v1")) {
+  localStorage.setItem("teacher_pin_hash_v1", await sha256(DEFAULT_PIN));
+}
+
 const PIN_HASH_KEY = "teacher_pin_hash_v1";
 const UNLOCK_KEY = "teacher_unlocked_v1";
 
