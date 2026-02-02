@@ -3,174 +3,126 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Chromebook Database (Firebase)</title>
+  <title>Student Database (Firebase)</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="app">
-    <header class="topbar">
-      <div class="brand">
-        <div class="logo">CB</div>
-        <div>
-          <h1>Chromebook Database</h1>
-          <p>Firebase Firestore + Teacher Login • PW field protected</p>
-        </div>
+  <div class="wrap">
+    <header class="top">
+      <div>
+        <h1>🎒 Student Database</h1>
+        <p class="sub">Firestore CRUD (Add • Edit • Delete) + Search</p>
       </div>
-
-      <div class="actions">
-        <div id="authBadge" class="badge">👤 Not logged in</div>
-        <button id="loginBtn" class="btn ghost">Teacher Login</button>
-        <button id="logoutBtn" class="btn ghost" hidden>Logout</button>
-      </div>
+      <div class="pill" id="statusPill">● Offline</div>
     </header>
 
-    <main class="layout">
-      <!-- Form -->
-      <section class="panel">
-        <div class="panel-head">
-          <h2 id="formTitle">Add Student</h2>
-          <span class="pill">Firebase DB</span>
-        </div>
+    <main class="grid">
+      <!-- FORM -->
+      <section class="card">
+        <h2 id="formTitle">Add Student</h2>
 
         <form id="studentForm" autocomplete="off">
-          <div class="grid">
-            <div class="field">
-              <label for="name">Name</label>
-              <input id="name" required placeholder="e.g., Maria Santos" />
-            </div>
+          <div class="two">
+            <label>
+              Student Number <span class="req">*</span>
+              <input id="studentNumber" required placeholder="e.g., 20260012" />
+            </label>
 
-            <div class="field">
-              <label for="section">Section</label>
-              <input id="section" required placeholder="e.g., G3 - A" />
-            </div>
-
-            <div class="field">
-              <label for="email">Email</label>
-              <input id="email" type="email" placeholder="e.g., maria@school.com" />
-            </div>
-
-            <div class="field">
-              <label for="pw">PW (Protected)</label>
-              <input id="pw" type="password" placeholder="Teacher-only" />
-              <small class="hint">Stored in pw_secrets (teachers only).</small>
-            </div>
-
-            <div class="field">
-              <label for="chromebook">Chromebook #</label>
-              <input id="chromebook" inputmode="numeric" placeholder="e.g., 12" />
-            </div>
-
-            <div class="field">
-              <label for="seat">Seat #</label>
-              <input id="seat" inputmode="numeric" placeholder="e.g., 5" />
-            </div>
-
-            <div class="field full">
-              <label for="tableColor">Table Color</label>
-              <div class="color-row">
-                <select id="tableColor">
-                  <option value="red">Red</option>
-                  <option value="blue">Blue</option>
-                  <option value="yellow">Yellow</option>
-                </select>
-                <div class="swatch" id="colorSwatch" aria-hidden="true"></div>
-              </div>
-              <small class="hint">Limited to Red, Blue, Yellow.</small>
-            </div>
-
-            <div class="field full">
-              <label for="note">Note</label>
-              <textarea id="note" rows="3" placeholder="Optional notes..."></textarea>
-            </div>
+            <label>
+              Section <span class="req">*</span>
+              <input id="section" required placeholder="e.g., P3-Ruby" />
+            </label>
           </div>
 
-          <div class="form-actions">
-            <button id="saveBtn" class="btn primary" type="submit">Save</button>
-            <button id="cancelEditBtn" class="btn ghost" type="button" hidden>Cancel</button>
+          <label>
+            Name <span class="req">*</span>
+            <input id="name" required placeholder="e.g., Alex Santos" />
+          </label>
+
+          <div class="two">
+            <label>
+              Email
+              <input id="email" type="email" placeholder="e.g., alex@email.com" />
+            </label>
+
+            <label>
+              PW (your meaning)
+              <input id="pw" placeholder="e.g., Parent WhatsApp / Project Work / etc." />
+            </label>
           </div>
 
-          <div class="mini">
-            <span>✳️ Add/Edit/Delete requires teacher login (Firestore rules).</span>
+          <div class="three">
+            <label>
+              Table Color <span class="req">*</span>
+              <select id="tableColor" required>
+                <option value="">Choose…</option>
+                <option value="red">Red</option>
+                <option value="blue">Blue</option>
+                <option value="yellow">Yellow</option>
+              </select>
+            </label>
+
+            <label>
+              Chromebook #
+              <input id="chromebookNumber" inputmode="numeric" placeholder="e.g., 14" />
+            </label>
+
+            <label>
+              Note
+              <input id="note" placeholder="e.g., Needs charger" />
+            </label>
           </div>
+
+          <div class="actions">
+            <button class="btn primary" type="submit" id="saveBtn">Save</button>
+            <button class="btn" type="button" id="cancelBtn" hidden>Cancel Edit</button>
+            <button class="btn danger" type="button" id="deleteBtn" hidden>Delete</button>
+          </div>
+
+          <p class="hint">
+            Student Number is used as the document ID so it’s unique.
+          </p>
         </form>
       </section>
 
-      <!-- Records -->
-      <section class="panel">
-        <div class="list-head">
-          <div>
-            <h2>Records</h2>
-            <div id="countLine" class="subtle"></div>
-          </div>
-
-          <div class="list-controls">
-            <input id="searchInput" class="search" placeholder="Search name / section / email / note..." />
-            <select id="sortSelect">
-              <option value="updated_desc">Recently updated</option>
-              <option value="name_asc">Name A → Z</option>
-              <option value="section_asc">Section A → Z</option>
-              <option value="chromebook_asc">Chromebook # (Low)</option>
-              <option value="seat_asc">Seat # (Low)</option>
-            </select>
+      <!-- LIST -->
+      <section class="card">
+        <div class="listHeader">
+          <h2>Students</h2>
+          <div class="rightTools">
+            <input id="search" class="search" placeholder="Search: number / name / section / chromebook…" />
+            <button class="btn" id="refreshBtn" type="button">Refresh</button>
           </div>
         </div>
 
-        <div class="table-wrap">
+        <div class="tableWrap">
           <table>
             <thead>
               <tr>
-                <th>Tag</th>
+                <th>Student #</th>
                 <th>Name</th>
                 <th>Section</th>
                 <th>Email</th>
                 <th>PW</th>
-                <th>Chromebook</th>
-                <th>Seat</th>
+                <th>Table</th>
+                <th>CB #</th>
                 <th>Note</th>
-                <th class="actions-col">Actions</th>
+                <th></th>
               </tr>
             </thead>
-            <tbody id="tbody"></tbody>
+            <tbody id="rows">
+              <tr><td colspan="9" class="muted">Loading…</td></tr>
+            </tbody>
           </table>
         </div>
 
-        <div class="mini subtle">
-          PW is blurred by default. Teachers can tap 👁 to reveal.
-        </div>
+        <p class="foot muted" id="countLine">0 students</p>
       </section>
     </main>
 
-    <footer class="footer">
-      Hosted on Netlify • Database on Firebase Firestore
+    <footer class="muted small">
+      Firebase Firestore + Vanilla JS. Keep your Firestore rules secure.
     </footer>
-  </div>
-
-  <!-- Login Modal -->
-  <div id="loginModal" class="modal" hidden>
-    <div class="modalCard">
-      <div class="modalHead">
-        <h3>Teacher Login</h3>
-        <button id="closeLoginModal" class="iconBtn" title="Close">✕</button>
-      </div>
-
-      <div class="grid onecol">
-        <div class="field">
-          <label for="teacherEmail">Email</label>
-          <input id="teacherEmail" type="email" placeholder="teacher@school.com" />
-        </div>
-        <div class="field">
-          <label for="teacherPass">Password</label>
-          <input id="teacherPass" type="password" placeholder="••••••••" />
-        </div>
-      </div>
-
-      <div class="modalActions">
-        <button id="doLoginBtn" class="btn primary">Login</button>
-        <button id="cancelLoginBtn" class="btn ghost">Cancel</button>
-      </div>
-
-      <small class="subtle">Only teachers can edit records and reveal PW.</small>
-    </div>
   </div>
 
   <script type="module" src="app.js"></script>
