@@ -453,7 +453,7 @@ tbody td:nth-child(8){
 .modal.show{ display:flex; }
 
 .modalPanel{
-  width: min(720px, 96vw);
+  width: min(620px, 94vw);
   background: rgba(255,255,255,.94);
   border: 1px solid rgba(18,32,51,.14);
   border-radius: 20px;
@@ -475,7 +475,7 @@ tbody td:nth-child(8){
 
 .modalBody{
   padding: 14px;
-  max-height: min(70vh, 560px);
+  max-height: min(52vh, 560px);
   overflow: auto;
   background:#fff;
 }
