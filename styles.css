@@ -41,9 +41,9 @@ body{
 }
 
 .wrap{
-  width: min(1180px, 100%);
+  width: min(1600px, 100%);  
   margin: 0 auto;
-  padding: var(--pad);
+  padding: clamp(12px, 1.8vw, 22px);
 
   height: 100vh;
   display:flex;
@@ -105,15 +105,11 @@ h1{ margin:0; font-size:28px; letter-spacing:.2px; }
 .grid{
   flex: 1;
   display:grid;
-
-  /* ✅ IMPORTANT: allow shrinking */
-  grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
-
+  grid-template-columns: minmax(360px, 480px) minmax(0, 1fr);
   gap: var(--gap);
-  align-items: start;
-  min-height: 0;
+  align-items:start;
+  min-height:0;
 }
-
 
 /* =========================
    CARD
