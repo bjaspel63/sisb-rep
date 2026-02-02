@@ -1,12 +1,12 @@
+// app.js — Firestore database + Teacher PIN (no Firebase Auth)
+// PW is protected: blurred by default + 👁 toggle, asks teacher PIN to reveal.
+// Add/Edit/Delete also require teacher PIN (can be changed).
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import {
   getFirestore, collection, doc, setDoc, updateDoc, deleteDoc,
   onSnapshot, query, orderBy, serverTimestamp, getDoc
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
-import {
-  getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut
-} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 
 /** =========================
  *  FIREBASE CONFIG
@@ -15,8 +15,6 @@ const firebaseConfig = {
   apiKey: "AIzaSyAF50UAawqFWXREMtbk7DcE8BCPAZgA_i0",
   authDomain: "sisb-rep.firebaseapp.com",
   projectId: "sisb-rep",
-  // NOTE: This value is not used by this app (no Storage calls here),
-  // but if you ever use Storage later, make sure it matches Firebase web config.
   storageBucket: "sisb-rep.firebasestorage.app",
   messagingSenderId: "435697746373",
   appId: "1:435697746373:web:43fe4a995de3b77a8b0bac",
@@ -25,7 +23,16 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const auth = getAuth(app);
+
+/** =========================
+ *  TEACHER PIN (LOCAL ONLY)
+ *  =========================
+ *  - This PIN protects PW reveal + edits.
+ *  - Stored as SHA-256 hash in localStorage.
+ *  - This is NOT bank-level security (it’s classroom privacy).
+ */
+const PIN_HASH_KEY = "teacher_pin_hash_v1";
+const UNLOCK_KEY = "teacher_unlocked_v1";
 
 // Color mapping (only red/blue/yellow)
 const COLOR_MAP = {
@@ -34,7 +41,6 @@ const COLOR_MAP = {
   yellow: "#f59e0b"
 };
 
-// Utilities (no DOM needed)
 function norm(s){ return (s ?? "").toString().trim(); }
 function safeLower(s){ return norm(s).toLowerCase(); }
 function toIntOrNull(v){
@@ -49,23 +55,27 @@ function escapeHtml(s){
   }[c]));
 }
 
+async function sha256(text){
+  const enc = new TextEncoder().encode(text);
+  const digest = await crypto.subtle.digest("SHA-256", enc);
+  return Array.from(new Uint8Array(digest)).map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+function hasPin(){ return !!localStorage.getItem(PIN_HASH_KEY); }
+function isUnlocked(){ return localStorage.getItem(UNLOCK_KEY) === "1"; }
+function setUnlocked(v){ localStorage.setItem(UNLOCK_KEY, v ? "1" : "0"); }
+
 window.addEventListener("DOMContentLoaded", () => {
-  console.log("app.js loaded ✅");
+  console.log("app.js loaded ✅ (no auth)");
 
   const $ = (id) => document.getElementById(id);
 
+  // Hide old auth UI if still in HTML
+  $("authBadge")?.remove();
+  $("loginBtn")?.remove();
+  $("logoutBtn")?.remove();
+  $("loginModal")?.remove();
+
   // UI refs
-  const authBadge = $("authBadge");
-  const loginBtn = $("loginBtn");
-  const logoutBtn = $("logoutBtn");
-
-  const loginModal = $("loginModal");
-  const closeLoginModal = $("closeLoginModal");
-  const cancelLoginBtn = $("cancelLoginBtn");
-  const doLoginBtn = $("doLoginBtn");
-  const teacherEmail = $("teacherEmail");
-  const teacherPass = $("teacherPass");
-
   const studentForm = $("studentForm");
   const formTitle = $("formTitle");
   const saveBtn = $("saveBtn");
@@ -74,7 +84,7 @@ window.addEventListener("DOMContentLoaded", () => {
   const nameEl = $("name");
   const sectionEl = $("section");
   const emailEl = $("email");
-  const pwEl = $("pw");
+  const pwEl = $("pw"); // input (teacher-only)
   const noteEl = $("note");
   const chromebookEl = $("chromebook");
   const seatEl = $("seat");
@@ -86,120 +96,178 @@ window.addEventListener("DOMContentLoaded", () => {
   const sortSelect = $("sortSelect");
   const countLine = $("countLine");
 
-  // Critical element check (prevents silent dead UI)
-  if(!loginBtn || !loginModal){
-    console.error("Missing #loginBtn or #loginModal. Check deploy files/ids.");
-    return;
+  // Insert a small lock button in the header area (right side)
+  const topbarActions = document.querySelector(".actions");
+  const lockBtn = document.createElement("button");
+  lockBtn.className = "btn ghost";
+  lockBtn.id = "pinLockBtn";
+  lockBtn.textContent = isUnlocked() ? "🔓 Teacher" : "🔒 Teacher";
+  topbarActions?.appendChild(lockBtn);
+
+  // PIN modal (created in JS so you don’t need to edit HTML)
+  const pinModal = document.createElement("div");
+  pinModal.className = "modal";
+  pinModal.id = "pinModal";
+  pinModal.hidden = true;
+  pinModal.innerHTML = `
+    <div class="modalCard">
+      <div class="modalHead">
+        <h3 id="pinTitle">Teacher Unlock</h3>
+        <button id="pinCloseBtn" class="iconBtn" title="Close">✕</button>
+      </div>
+
+      <div class="grid onecol">
+        <div class="field">
+          <label for="pinInput">PIN</label>
+          <input id="pinInput" type="password" inputmode="numeric" placeholder="••••" />
+          <small class="hint" id="pinHint">Enter teacher PIN to unlock.</small>
+        </div>
+
+        <div class="field" id="pinConfirmWrap" style="display:none;">
+          <label for="pinConfirmInput">Confirm PIN</label>
+          <input id="pinConfirmInput" type="password" inputmode="numeric" placeholder="••••" />
+        </div>
+      </div>
+
+      <div class="modalActions">
+        <button id="pinPrimaryBtn" class="btn primary">Unlock</button>
+        <button id="pinSecondaryBtn" class="btn ghost" style="display:none;">Cancel</button>
+      </div>
+
+      <small class="subtle">PIN is stored on this device only.</small>
+    </div>
+  `;
+  document.body.appendChild(pinModal);
+
+  const pinTitle = pinModal.querySelector("#pinTitle");
+  const pinHint = pinModal.querySelector("#pinHint");
+  const pinCloseBtn = pinModal.querySelector("#pinCloseBtn");
+  const pinInput = pinModal.querySelector("#pinInput");
+  const pinConfirmWrap = pinModal.querySelector("#pinConfirmWrap");
+  const pinConfirmInput = pinModal.querySelector("#pinConfirmInput");
+  const pinPrimaryBtn = pinModal.querySelector("#pinPrimaryBtn");
+  const pinSecondaryBtn = pinModal.querySelector("#pinSecondaryBtn");
+
+  let pinMode = "unlock"; // "unlock" | "set" | "change"
+
+  function openPinModal(mode){
+    pinMode = mode;
+    pinInput.value = "";
+    pinConfirmInput.value = "";
+
+    // Decide UI
+    if(mode === "set"){
+      pinTitle.textContent = "Set Teacher PIN";
+      pinHint.textContent = "Create a PIN for this device.";
+      pinPrimaryBtn.textContent = "Set PIN";
+      pinConfirmWrap.style.display = "";
+      pinSecondaryBtn.style.display = "";
+    }else if(mode === "change"){
+      pinTitle.textContent = "Change Teacher PIN";
+      pinHint.textContent = "Enter a new PIN for this device.";
+      pinPrimaryBtn.textContent = "Change PIN";
+      pinConfirmWrap.style.display = "";
+      pinSecondaryBtn.style.display = "";
+    }else{
+      pinTitle.textContent = "Teacher Unlock";
+      pinHint.textContent = "Enter teacher PIN to unlock.";
+      pinPrimaryBtn.textContent = "Unlock";
+      pinConfirmWrap.style.display = "none";
+      pinSecondaryBtn.style.display = "none";
+    }
+
+    pinModal.hidden = false;
+    pinInput.focus();
   }
+
+  function closePinModal(){
+    pinModal.hidden = true;
+  }
+
+  pinCloseBtn.addEventListener("click", closePinModal);
+  pinSecondaryBtn.addEventListener("click", closePinModal);
+  pinModal.addEventListener("click", (e)=>{
+    if(e.target === pinModal) closePinModal();
+  });
+
+  lockBtn.addEventListener("click", ()=>{
+    if(isUnlocked()){
+      setUnlocked(false);
+      lockBtn.textContent = "🔒 Teacher";
+      applyLockUI();
+      render();
+      return;
+    }
+    if(!hasPin()) openPinModal("set");
+    else openPinModal("unlock");
+  });
+
+  pinPrimaryBtn.addEventListener("click", async ()=>{
+    const pin = norm(pinInput.value);
+    if(pin.length < 4){
+      alert("PIN must be at least 4 digits/characters.");
+      return;
+    }
+
+    if(pinMode === "set" || pinMode === "change"){
+      const confirmPin = norm(pinConfirmInput.value);
+      if(confirmPin !== pin){
+        alert("PIN confirmation does not match.");
+        return;
+      }
+      const h = await sha256(pin);
+      localStorage.setItem(PIN_HASH_KEY, h);
+      setUnlocked(true);
+      lockBtn.textContent = "🔓 Teacher";
+      closePinModal();
+      applyLockUI();
+      render();
+      alert(pinMode === "set" ? "PIN set. Unlocked!" : "PIN changed. Unlocked!");
+      return;
+    }
+
+    // unlock mode
+    const stored = localStorage.getItem(PIN_HASH_KEY);
+    const h = await sha256(pin);
+    if(h === stored){
+      setUnlocked(true);
+      lockBtn.textContent = "🔓 Teacher";
+      closePinModal();
+      applyLockUI();
+      render();
+    }else{
+      alert("Wrong PIN.");
+    }
+  });
 
   // Data + state
   let records = [];            // students collection
   let editingId = null;
-  let currentUser = null;
 
   // PW visibility cache
   const pwCache = new Map();   // id -> pw string
   const pwVisible = new Set(); // ids currently revealed
-
-  function canEdit(){
-    return !!currentUser; // based on Auth + rules
-  }
 
   function setColorUI(colorKey){
     const hex = COLOR_MAP[colorKey] || COLOR_MAP.red;
     if(colorSwatch) colorSwatch.style.background = hex;
   }
 
-  // Safe color init
-  if(tableColorEl){
-    tableColorEl.addEventListener("change", ()=> setColorUI(tableColorEl.value));
-    setColorUI(tableColorEl.value);
+  tableColorEl?.addEventListener("change", ()=> setColorUI(tableColorEl.value));
+  if(tableColorEl) setColorUI(tableColorEl.value);
+
+  function applyLockUI(){
+    const locked = !isUnlocked();
+
+    // Disable form when locked (feel free to remove this if you want add/edit without unlock)
+    [nameEl, sectionEl, emailEl, pwEl, noteEl, chromebookEl, seatEl, tableColorEl, saveBtn, cancelEditBtn]
+      .forEach(el => { if(el) el.disabled = locked; });
+
+    // Always blur/hide any shown PW when locked
+    if(locked) pwVisible.clear();
   }
-
-  // ---------- Auth modal ----------
-function openLogin(){
-  console.log("openLogin() ✅");
-  loginModal.removeAttribute("hidden");   // stronger than .hidden = false
-  loginModal.style.display = "flex";      // forces visible even if CSS conflicts
-  teacherEmail.value = "";
-  teacherPass.value = "";
-  teacherEmail.focus();
-}
-
-function closeLogin(){
-  console.log("closeLogin() ✅");
-  loginModal.setAttribute("hidden", "");
-  loginModal.style.display = "";          // back to CSS default
-}
-
-loginBtn.addEventListener("click", (e) => {
-  e.preventDefault();
-  console.log("Teacher Login button clicked ✅");
-  openLogin();
-});
-
-closeLoginModal?.addEventListener("click", closeLogin);
-cancelLoginBtn?.addEventListener("click", closeLogin);
-
-// Close when clicking outside the card
-loginModal.addEventListener("click", (e) => {
-  if (e.target === loginModal) closeLogin();
-});
-
-
-doLoginBtn.addEventListener("click", async ()=>{
-  console.log("Login submit clicked ✅");
-  const em = norm(teacherEmail.value);
-  const pw = norm(teacherPass.value);
-
-  if(!em || !pw){
-    alert("Enter email + password.");
-    return;
-  }
-
-  try{
-    const cred = await signInWithEmailAndPassword(auth, em, pw);
-    console.log("Login success ✅", cred.user.email);
-    closeLogin();
-  }catch(e){
-    console.error("Login failed ❌", e.code, e.message);
-    alert("Login failed: " + (e.code || e.message));
-  }
-});
-
-
-  logoutBtn?.addEventListener("click", async ()=>{
-    try{
-      await signOut(auth);
-    }catch(e){
-      console.error("Logout error:", e);
-    }
-  });
-
-  // update UI when auth changes
-  onAuthStateChanged(auth, (user)=>{
-    currentUser = user || null;
-    if(user){
-      if(authBadge) authBadge.textContent = `👤 ${user.email}`;
-      if(loginBtn) loginBtn.hidden = true;
-      if(logoutBtn) logoutBtn.hidden = false;
-    }else{
-      if(authBadge) authBadge.textContent = "👤 Not logged in";
-      if(loginBtn) loginBtn.hidden = false;
-      if(logoutBtn) logoutBtn.hidden = true;
-      // hide all revealed PW immediately when teacher logs out
-      pwVisible.clear();
-      console.log("AUTH STATE:", user ? user.email : "logged out");
-
-    }
-    render();
-  });
 
   // ---------- Firestore subscription ----------
-  // NOTE: orderBy(updatedAt) requires updatedAt to exist.
-  // Our writes always set updatedAt, so it’s OK after first write.
-  // If you already have old docs without updatedAt, set it once or use the fallback query below.
-
   const studentsRef = collection(db, "students");
   const qStudents = query(studentsRef, orderBy("updatedAt", "desc"));
 
@@ -211,17 +279,14 @@ doLoginBtn.addEventListener("click", async ()=>{
     },
     (err)=>{
       console.error("Firestore snapshot error:", err);
-      // Show a helpful message instead of "nothing happens"
-      if(tbody){
-        tbody.innerHTML = `
-          <tr>
-            <td colspan="9" style="padding:14px; color: rgba(234,240,255,.75);">
-              ⚠️ Cannot read Firestore data. Check Firestore rules / indexes.<br/>
-              <span style="opacity:.75; font-size:12px;">${escapeHtml(err?.message || "")}</span>
-            </td>
-          </tr>
-        `;
-      }
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="9" style="padding:14px; color: rgba(234,240,255,.75);">
+            ⚠️ Cannot read Firestore data. Check Firestore rules / index.<br/>
+            <span style="opacity:.75; font-size:12px;">${escapeHtml(err?.message || "")}</span>
+          </td>
+        </tr>
+      `;
     }
   );
 
@@ -265,40 +330,41 @@ doLoginBtn.addEventListener("click", async ()=>{
     return null;
   }
 
+  async function requireTeacherUnlock(){
+    if(isUnlocked()) return true;
+    if(!hasPin()){
+      openPinModal("set");
+    }else{
+      openPinModal("unlock");
+    }
+    return false;
+  }
+
   // Create / Update documents:
   // - students/{id} : public fields
-  // - pw_secrets/{id} : { pw } teacher-only
+  // - pw_secrets/{id} : { pw } teacher-only (we still use a separate doc for separation)
   async function upsertStudent(id, data, pw){
-    if(!canEdit()){
-      alert("Teacher login required to save.");
-      openLogin();
-      return;
-    }
+    const ok = await requireTeacherUnlock();
+    if(!ok) return;
 
     if(!id){
-      // create new student with auto id
       const newRef = doc(collection(db, "students"));
       await setDoc(newRef, {
         ...data,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       });
-
-      // store PW separately (if provided)
       await setDoc(doc(db, "pw_secrets", newRef.id), { pw: pw || "" });
       return;
     }
 
-    // update student
     await updateDoc(doc(db, "students", id), {
       ...data,
       updatedAt: serverTimestamp()
     });
 
-    // update PW (always write; you can change this to "only if pw typed")
     await setDoc(doc(db, "pw_secrets", id), { pw: pw || "" }, { merge: true });
 
-    // if revealed, refresh cache
     if(pwVisible.has(id)){
       pwCache.set(id, pw || "");
     }
@@ -323,13 +389,10 @@ doLoginBtn.addEventListener("click", async ()=>{
 
   // ---------- Delete ----------
   async function deleteStudent(id){
-    if(!canEdit()){
-      alert("Teacher login required to delete.");
-      openLogin();
-      return;
-    }
-    if(!confirm("Delete this record?")) return;
+    const ok = await requireTeacherUnlock();
+    if(!ok) return;
 
+    if(!confirm("Delete this record?")) return;
     try{
       await deleteDoc(doc(db, "students", id));
       await deleteDoc(doc(db, "pw_secrets", id));
@@ -344,12 +407,9 @@ doLoginBtn.addEventListener("click", async ()=>{
   }
 
   // ---------- Edit ----------
-  function startEdit(id){
-    if(!canEdit()){
-      alert("Teacher login required to edit.");
-      openLogin();
-      return;
-    }
+  async function startEdit(id){
+    const ok = await requireTeacherUnlock();
+    if(!ok) return;
 
     const r = records.find(x => x.id === id);
     if(!r) return;
@@ -378,17 +438,16 @@ doLoginBtn.addEventListener("click", async ()=>{
 
   // ---------- PW reveal ----------
   async function togglePw(id){
+    // If already visible, hide without needing PIN
     if(pwVisible.has(id)){
       pwVisible.delete(id);
       render();
       return;
     }
 
-    if(!currentUser){
-      alert("Teacher login required to reveal PW.");
-      openLogin();
-      return;
-    }
+    // Need teacher unlock to reveal
+    const ok = await requireTeacherUnlock();
+    if(!ok) return;
 
     try{
       const snap = await getDoc(doc(db, "pw_secrets", id));
@@ -397,7 +456,7 @@ doLoginBtn.addEventListener("click", async ()=>{
       pwVisible.add(id);
       render();
     }catch(e){
-      alert("Cannot reveal PW (check Firestore rules): " + (e?.message || "Unknown error"));
+      alert("Cannot reveal PW: " + (e?.message || "Unknown error"));
       console.error("Reveal PW error:", e);
     }
   }
@@ -420,9 +479,7 @@ doLoginBtn.addEventListener("click", async ()=>{
       case "section_asc": return byStr(a.section, b.section);
       case "chromebook_asc": return byNum(a.chromebookNumber, b.chromebookNumber);
       case "seat_asc": return byNum(a.seatNumber, b.seatNumber);
-      case "updated_desc":
-      default:
-        return 0; // already ordered by query
+      default: return 0; // already ordered by Firestore query
     }
   }
 
@@ -455,6 +512,8 @@ doLoginBtn.addEventListener("click", async ()=>{
       const pwClass = pwVisible.has(r.id) ? "" : "pwBlur";
       const eye = pwVisible.has(r.id) ? "🙈" : "👁️";
 
+      const lockNote = isUnlocked() ? "" : `<span style="opacity:.55; font-size:12px;">(locked)</span>`;
+
       tr.innerHTML = `
         <td><span class="tag" style="background:${tagHex}"></span></td>
         <td>${escapeHtml(r.name)}</td>
@@ -465,6 +524,7 @@ doLoginBtn.addEventListener("click", async ()=>{
           <div class="pwCell">
             <span class="${pwClass}">${escapeHtml(shownPw)}</span>
             <button class="eyeBtn" data-eye="${r.id}" title="Show/Hide PW">${eye}</button>
+            ${lockNote}
           </div>
         </td>
 
@@ -497,7 +557,10 @@ doLoginBtn.addEventListener("click", async ()=>{
     if(delBtn) return deleteStudent(delBtn.dataset.del);
   });
 
-  // Initial render
+  // Initial
+  setUnlocked(false); // lock on load for privacy
+  lockBtn.textContent = "🔒 Teacher";
+  applyLockUI();
   resetForm();
   render();
 });
