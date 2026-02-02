@@ -3,87 +3,99 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="color-scheme" content="light" />
   <title>Student Database</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 
 <body>
+  <a class="skipLink" href="#main">Skip to content</a>
+
   <div class="wrap">
-    <header class="top">
-      <div>
+    <header class="top" role="banner">
+      <div class="titleBlock">
         <h1>🎒 Student Database</h1>
         <p class="sub">CRUD + Search + CSV Import + Print Cards</p>
       </div>
 
-      <div class="topRight">
-        <div class="pill" id="teacherPill">🔒 PW Locked</div>
-        <button class="btn" id="setTeacherPassBtn" type="button">Set / Change Teacher Password</button>
-        <button class="btn" id="lockBtn" type="button">Lock</button>
-        <div class="pill" id="statusPill">● Offline</div>
+      <div class="topRight" aria-label="Teacher controls and status">
+        <div class="pill" id="teacherPill" aria-live="polite">🔒 PW Locked</div>
+
+        <button class="btn" id="setTeacherPassBtn" type="button">
+          Set / Change Teacher Password
+        </button>
+
+        <button class="btn" id="lockBtn" type="button">
+          Lock
+        </button>
+
+        <div class="pill" id="statusPill" aria-live="polite">● Offline</div>
       </div>
     </header>
 
-    <main class="grid">
+    <main id="main" class="grid" role="main">
       <!-- LEFT: FORM -->
-      <section class="card">
+      <section class="card" aria-labelledby="formTitle">
         <h2 id="formTitle">Add Student</h2>
 
         <form id="studentForm" autocomplete="off">
           <div class="two">
-            <label>
+            <label for="studentNumber">
               Student Number <span class="req">*</span>
-              <input id="studentNumber" required placeholder="e.g., 20260012" />
             </label>
+            <input id="studentNumber" required placeholder="e.g., 20260012" />
 
-            <label>
+            <label for="section">
               Section <span class="req">*</span>
-              <input id="section" required placeholder="e.g., P3-Hope" />
             </label>
+            <input id="section" required placeholder="e.g., P3-Hope" />
           </div>
 
-          <label>
+          <label for="name">
             Name <span class="req">*</span>
-            <input id="name" required placeholder="e.g., Jaspel Bosales" />
           </label>
+          <input id="name" required placeholder="e.g., Jaspel Bosales" />
 
           <div class="two">
-            <label>
+            <label for="email">
               Email
-              <input id="email" type="email" placeholder="e.g., jaspel.b@sisbschool.com" />
             </label>
+            <input id="email" type="email" placeholder="e.g., jaspel.b@sisbschool.com" />
 
-            <label>
-              Password
+            <div>
+              <label for="pw">Password</label>
               <div class="pwField">
                 <input id="pw" type="password" placeholder="Any code/label you use" />
-                <button class="eyeBtn" type="button" id="pwEyeBtn" title="Show/Hide PW">👁️</button>
+                <button class="eyeBtn" type="button" id="pwEyeBtn" title="Show/Hide PW" aria-label="Show or hide password">
+                  👁️
+                </button>
               </div>
-            </label>
+            </div>
           </div>
 
           <div class="three">
-            <label>
+            <label for="tableColor">
               Table Color <span class="req">*</span>
-              <select id="tableColor" required>
-                <option value="" disabled selected>Choose…</option>
-                <option value="red">Red</option>
-                <option value="blue">Blue</option>
-                <option value="yellow">Yellow</option>
-              </select>
             </label>
+            <select id="tableColor" required>
+              <option value="" disabled selected>Choose…</option>
+              <option value="red">Red</option>
+              <option value="blue">Blue</option>
+              <option value="yellow">Yellow</option>
+            </select>
 
-            <label>
+            <label for="chromebookNumber">
               Chromebook #
-              <input id="chromebookNumber" inputmode="numeric" placeholder="e.g., 14" />
             </label>
+            <input id="chromebookNumber" inputmode="numeric" placeholder="e.g., 14" />
 
-            <label>
+            <label for="note">
               Note
-              <input id="note" placeholder="e.g., Needs charger" />
             </label>
+            <input id="note" placeholder="e.g., Needs charger" />
           </div>
 
-          <div class="actions">
+          <div class="actions" role="group" aria-label="Form actions">
             <button class="btn primary" type="submit" id="saveBtn">Save</button>
             <button class="btn" type="button" id="cancelBtn" hidden>Cancel Edit</button>
             <button class="btn danger" type="button" id="deleteBtn" hidden>Delete</button>
@@ -94,38 +106,44 @@
           </p>
         </form>
 
-        <hr class="sep"/>
+        <hr class="sep" />
 
         <!-- CSV IMPORT -->
-        <div class="importBox">
-          <h3>📥 Import CSV</h3>
-          
+        <div class="importBox" aria-labelledby="importTitle">
+          <h3 id="importTitle">📥 Import CSV</h3>
+          <p class="muted small">
+            Columns: <code>studentNumber,name,section,email,pw,tableColor,chromebookNumber,note</code>
+          </p>
 
           <div class="importRow">
+            <label class="fileLabel" for="csvFile">Choose CSV file</label>
             <input type="file" id="csvFile" accept=".csv,text/csv" />
+
             <div class="actions" style="margin:0;">
               <button class="btn" id="downloadTemplateBtn" type="button">Download CSV Template</button>
               <button class="btn primary" id="importBtn" type="button">Import CSV</button>
             </div>
           </div>
 
-          <div class="foot muted small" id="importStatus"></div>
+          <div class="foot muted small" id="importStatus" aria-live="polite"></div>
         </div>
       </section>
 
       <!-- RIGHT: LIST -->
-      <section class="card">
+      <section class="card" aria-labelledby="studentsTitle">
         <div class="listHeader">
-          <h2 style="margin:0;">Students</h2>
-          <div class="rightTools">
+          <h2 id="studentsTitle" style="margin:0;">Students</h2>
+
+          <div class="rightTools" aria-label="Search and refresh">
+            <label class="srOnly" for="search">Search students</label>
             <input id="search" class="search" placeholder="Search: number / name / section / chromebook / note…" />
             <button class="btn" id="refreshBtn" type="button">Refresh</button>
           </div>
         </div>
 
-        <p class="foot muted" id="countLine">0 students</p>
+        <p class="foot muted" id="countLine" aria-live="polite">0 students</p>
 
-        <div class="tableWrap">
+        <div class="tableWrap" role="region" aria-label="Students table" tabindex="0">
           <table>
             <thead>
               <tr>
@@ -137,7 +155,7 @@
                 <th>Table</th>
                 <th>CB #</th>
                 <th>Note</th>
-                <th></th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody id="rows">
@@ -145,29 +163,32 @@
             </tbody>
           </table>
         </div>
+
+        <p class="muted small" style="margin:10px 0 0;">
+          Tip: Use <b>Card</b> to preview. Use <b>Print</b> (if enabled in your JS) to print only the card.
+        </p>
       </section>
-    </main><!-- ✅ closes .grid -->
-  </div><!-- ✅ closes .wrap -->
+    </main>
+  </div>
 
-<!-- ✅ Card Modal -->
-<div id="cardModal" class="modal" aria-hidden="true">
-  <div class="modalPanel" role="dialog" aria-modal="true" aria-labelledby="cardModalTitle">
-    <div class="modalHeader kidHeader">
-      <h3 id="cardModalTitle">🪪 Student Card</h3>
-      <button class="iconBtn" id="closeCardModalBtn" type="button" aria-label="Close">✕</button>
-    </div>
+  <!-- ✅ Card Modal (kid header/body) -->
+  <div id="cardModal" class="modal" aria-hidden="true">
+    <div class="modalPanel" role="dialog" aria-modal="true" aria-labelledby="cardModalTitle">
+      <div class="modalHeader kidHeader">
+        <h3 id="cardModalTitle">🪪 Student Card</h3>
+        <button class="iconBtn" id="closeCardModalBtn" type="button" aria-label="Close">✕</button>
+      </div>
 
-    <div id="cardModalBody" class="modalBody kidBody"></div>
+      <div id="cardModalBody" class="modalBody kidBody"></div>
 
-    <!-- ✅ No Print/Close buttons anymore -->
-    <div class="modalFooter kidFooter">
-      <div class="muted small" id="cardModalHint">
-        Tip: Press <b>Ctrl + P</b> to print (Teacher unlocked = shows PW).
+      <!-- ✅ No Print/Close buttons inside the modal -->
+      <div class="modalFooter kidFooter">
+        <div class="muted small" id="cardModalHint">
+          Tip: Press <b>Ctrl + P</b> to print (Teacher unlocked = shows PW).
+        </div>
       </div>
     </div>
   </div>
-</div>
-
 
   <!-- Print-only container -->
   <div id="printRoot" aria-hidden="true"></div>
