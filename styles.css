@@ -492,6 +492,7 @@ tbody td:nth-child(8){
    PRINT (kid card) - matches JS printSelectedCard()
 ========================= */
 @media print{
+    .modal{ display:none !important; }
   body{
     margin: 0 !important;
     background:#fff !important;
