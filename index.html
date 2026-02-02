@@ -123,29 +123,24 @@
         <hr class="sep" />
 
         <!-- CSV IMPORT -->
-        <div class="importBox" aria-labelledby="importTitle">
-          <h3 id="importTitle">📥 Import CSV</h3>
+<div class="importBox" aria-labelledby="importTitle">
+  <h3 id="importTitle">📥 Import CSV</h3>
 
-          <p class="muted small">
-            Columns:
-            <code>studentNumber,name,section,email,pw,tableColor,chromebookNumber,note</code>
-          </p>
+  <div class="importRow">
+    <div class="filePick">
+      <label class="fileLabel" for="csvFile">Choose CSV file</label>
+      <input type="file" id="csvFile" accept=".csv,text/csv" />
+    </div>
 
-          <div class="importRow">
-            <div class="filePick">
-              <label class="fileLabel" for="csvFile">Choose CSV file</label>
-              <input type="file" id="csvFile" accept=".csv,text/csv" />
-            </div>
+    <div class="importActions" role="group" aria-label="CSV actions">
+      <button class="btn" id="downloadTemplateBtn" type="button">Download CSV Template</button>
+      <button class="btn primary" id="importBtn" type="button">Import CSV</button>
+    </div>
+  </div>
 
-            <div class="actions importActions" role="group" aria-label="CSV actions">
-              <button class="btn" id="downloadTemplateBtn" type="button">Download CSV Template</button>
-              <button class="btn primary" id="importBtn" type="button">Import CSV</button>
-            </div>
-          </div>
+  <div class="foot muted small" id="importStatus" aria-live="polite"></div>
+</div>
 
-          <div class="foot muted small" id="importStatus" aria-live="polite"></div>
-        </div>
-      </section>
 
       <!-- RIGHT: LIST (only table scrolls) -->
       <section class="card listCard" aria-labelledby="studentsTitle">
