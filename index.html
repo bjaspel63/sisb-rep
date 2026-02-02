@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Student Database (Firebase)</title>
+  <title>Student Database</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -11,9 +11,15 @@
     <header class="top">
       <div>
         <h1>🎒 Student Database</h1>
-        <p class="sub">Firestore CRUD (Add • Edit • Delete) + Search</p>
+        <p class="sub">CRUD + Search + CSV Import + Print Cards</p>
       </div>
-      <div class="pill" id="statusPill">● Offline</div>
+
+      <div class="topRight">
+        <div class="pill" id="teacherPill">🔒 PW Locked</div>
+        <button class="btn" id="setTeacherPassBtn" type="button">Set / Change Teacher Password</button>
+        <button class="btn" id="lockBtn" type="button">Lock</button>
+        <div class="pill" id="statusPill">● Offline</div>
+      </div>
     </header>
 
     <main class="grid">
@@ -30,24 +36,24 @@
 
             <label>
               Section <span class="req">*</span>
-              <input id="section" required placeholder="e.g., P3-Ruby" />
+              <input id="section" required placeholder="e.g., P3-Hope" />
             </label>
           </div>
 
           <label>
             Name <span class="req">*</span>
-            <input id="name" required placeholder="e.g., Alex Santos" />
+            <input id="name" required placeholder="e.g., Jaspel Bosales" />
           </label>
 
           <div class="two">
             <label>
               Email
-              <input id="email" type="email" placeholder="e.g., alex@email.com" />
+              <input id="email" type="email" placeholder="e.g., jaspel.b@sisbschool.com" />
             </label>
 
             <label>
-              PW (your meaning)
-              <input id="pw" placeholder="e.g., Parent WhatsApp / Project Work / etc." />
+              Password
+              <input id="pw" placeholder="Any code/label you use" />
             </label>
           </div>
 
@@ -80,17 +86,37 @@
           </div>
 
           <p class="hint">
-            Student Number is used as the document ID so it’s unique.
+            Student Number is used as the document ID (unique).
           </p>
         </form>
+
+        <hr class="sep"/>
+
+        <!-- CSV IMPORT -->
+        <div class="importBox">
+          <h3>📥 Import CSV</h3>
+          <p class="muted small">
+            Columns: <code>studentNumber,name,section,email,pw,tableColor,chromebookNumber,note</code>
+          </p>
+
+          <div class="two">
+            <input type="file" id="csvFile" accept=".csv,text/csv" />
+            <button class="btn" id="importBtn" type="button">Import CSV</button>
+          </div>
+
+          <div class="importRow">
+            <button class="btn" id="downloadTemplateBtn" type="button">Download CSV Template</button>
+            <span class="muted small" id="importStatus"></span>
+          </div>
+        </div>
       </section>
 
-      <!-- LIST -->
+      <!-- LIST + CARD PRINT -->
       <section class="card">
         <div class="listHeader">
           <h2>Students</h2>
           <div class="rightTools">
-            <input id="search" class="search" placeholder="Search: number / name / section / chromebook…" />
+            <input id="search" class="search" placeholder="Search: number / name / section / chromebook / note…" />
             <button class="btn" id="refreshBtn" type="button">Refresh</button>
           </div>
         </div>
@@ -117,13 +143,29 @@
         </div>
 
         <p class="foot muted" id="countLine">0 students</p>
+
+        <hr class="sep"/>
+
+        <!-- CARD PREVIEW + PRINT -->
+        <div class="cardPrintArea">
+          <div class="cardPrintHeader">
+            <h3>🪪 Student Card</h3>
+            <div class="cardBtns">
+              <button class="btn" id="printCardBtn" type="button" disabled>Print Card</button>
+              <button class="btn" id="clearCardBtn" type="button" disabled>Clear</button>
+            </div>
+          </div>
+
+          <div id="studentCard" class="studentCard empty">
+            <div class="muted">Select a student (click “Card”).</div>
+          </div>
+        </div>
       </section>
     </main>
-
-    <footer class="muted small">
-      Firebase Firestore + Vanilla JS. Keep your Firestore rules secure.
-    </footer>
   </div>
+
+  <!-- Print-only container -->
+  <div id="printRoot" aria-hidden="true"></div>
 
   <script type="module" src="app.js"></script>
 </body>
