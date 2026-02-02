@@ -128,6 +128,19 @@ function maskedPw(pw){
   return `<span class="maskText">${bullets}</span>`;
 }
 
+function initials(name){
+  const s = (name || "").trim();
+  if(!s) return "🙂";
+  const parts = s.split(/\s+/).slice(0,2);
+  return parts.map(p => (p[0] || "").toUpperCase()).join("") || "🙂";
+}
+
+function tableLabel(color){
+  const c = (color || "").toLowerCase();
+  const ok = (c === "red" || c === "blue" || c === "yellow") ? c : "red";
+  return ok.toUpperCase();
+}
+
 function setMode(mode){
   if(!formTitle) return;
 
@@ -198,48 +211,55 @@ function closeModal(){
   if(!cardModal) return;
   cardModal.classList.remove("show");
   cardModal.setAttribute("aria-hidden", "true");
-  // Clear printRoot so printing later won't print the old card by accident
-  if(printRootEl) printRootEl.innerHTML = "";
 }
 
 // ========================
-// CARD HTML (kid style)
+// CARD HTML (kid style) - matches your CSS (.studentCard.kidCard, etc.)
 // ========================
 function renderCardHTML(d){
   const pwDisplay = pwUnlocked ? safeText(d.pw || "—") : "••••••••";
   const pwNote = pwUnlocked ? "" : `<span class="muted small">(Locked)</span>`;
+  const ini = initials(d.name);
+  const table = tableLabel(d.tableColor);
 
   return `
-    <div class="kidCard">
-      <div class="kidCardHeader">
-        <div class="kidBadge">${colorBadge(d.tableColor)}</div>
-        <div class="kidTitle">
-          <div class="kidName">🌟 ${safeText(d.name)}</div>
-          <div class="kidSub">
-            Student # <b>${safeText(d.studentNumber)}</b> · Section <b>${safeText(d.section)}</b>
-          </div>
+    <div class="studentCard kidCard">
+      <div class="kidTop">
+        <div class="kidAvatar" aria-hidden="true">${safeText(ini)}</div>
+
+        <div>
+          <p class="kidName">${safeText(d.name || "—")}</p>
+          <p class="kidLine">
+            # <b>${safeText(d.studentNumber || "—")}</b> ·
+            Section <b>${safeText(d.section || "—")}</b>
+          </p>
+        </div>
+
+        <div class="kidSticker">
+          <span class="dot ${safeText((d.tableColor||"red").toLowerCase())}"></span>
+          TABLE ${safeText(table)}
         </div>
       </div>
 
       <div class="kidGrid">
-        <div class="kidItem">
-          <div class="kidKey">📧 Email</div>
-          <div class="kidVal">${safeText(d.email || "—")}</div>
+        <div class="kidCell">
+          <b>Email</b>
+          <div class="kidValue wrap">${safeText(d.email || "—")}</div>
         </div>
 
-        <div class="kidItem">
-          <div class="kidKey">💻 Chromebook</div>
-          <div class="kidVal">${safeText(d.chromebookNumber || "—")}</div>
+        <div class="kidCell">
+          <b>Chromebook #</b>
+          <div class="kidValue">${safeText(d.chromebookNumber || "—")}</div>
         </div>
 
-        <div class="kidItem">
-          <div class="kidKey">🔐 PW</div>
-          <div class="kidVal">${pwDisplay} ${pwNote}</div>
+        <div class="kidCell">
+          <b>Password</b>
+          <div class="kidValue">${pwDisplay} ${pwNote}</div>
         </div>
 
-        <div class="kidItem">
-          <div class="kidKey">📌 Note</div>
-          <div class="kidVal">${safeText(d.note || "—")}</div>
+        <div class="kidCell">
+          <b>Note</b>
+          <div class="kidValue wrap">${safeText(d.note || "—")}</div>
         </div>
       </div>
     </div>
@@ -247,40 +267,41 @@ function renderCardHTML(d){
 }
 
 // ========================
-// PRINT HTML (NO buttons)
+// PRINT HTML (kid style) - prints ONLY #printRoot
 // ========================
-function buildPrintHTML(d){
+function renderPrintHTML(d){
+  const ini = initials(d.name);
+  const table = tableLabel(d.tableColor);
   const pwDisplay = pwUnlocked ? (d.pw || "—") : "••••••••";
 
   return `
-    <div class="printKidCard">
-      <div class="printKidHeader">
-        <div class="printKidName">🌈 ${safeText(d.name)}</div>
-        <div class="printKidMeta">
-          <span>Student # <b>${safeText(d.studentNumber)}</b></span>
-          <span>Section <b>${safeText(d.section)}</b></span>
+    <div class="printCard kidPrint">
+      <div class="printHeader">
+        <div class="printAvatar" aria-hidden="true">${safeText(ini)}</div>
+
+        <div>
+          <div class="printName">${safeText(d.name || "—")}</div>
+          <div class="printMini"># ${safeText(d.studentNumber || "—")} · ${safeText(d.section || "—")}</div>
         </div>
+
+        <div class="printSticker">TABLE ${safeText(table)}</div>
       </div>
 
-      <div class="printKidGrid">
+      <div class="printGrid">
         <div>
-          <div class="k">📧 Email</div>
+          <div class="k">Email</div>
           <div class="v">${safeText(d.email || "—")}</div>
         </div>
         <div>
-          <div class="k">💻 Chromebook</div>
+          <div class="k">Chromebook #</div>
           <div class="v">${safeText(d.chromebookNumber || "—")}</div>
         </div>
         <div>
-          <div class="k">🔐 PW</div>
+          <div class="k">Password</div>
           <div class="v">${safeText(pwDisplay)}</div>
         </div>
         <div>
-          <div class="k">🎨 Table</div>
-          <div class="v">${safeText((d.tableColor||"").toUpperCase())}</div>
-        </div>
-        <div style="grid-column: 1 / -1;">
-          <div class="k">📌 Note</div>
+          <div class="k">Note</div>
           <div class="v">${safeText(d.note || "—")}</div>
         </div>
       </div>
@@ -290,11 +311,6 @@ function buildPrintHTML(d){
 
 function showCard(d){
   selectedForCard = d;
-
-  // Prepare print content (so browser print menu also prints the card only)
-  if(printRootEl){
-    printRootEl.innerHTML = buildPrintHTML(d);
-  }
 
   if(modalExists()){
     cardModalBody.innerHTML = renderCardHTML(d);
@@ -308,20 +324,27 @@ function refreshSelectedCardUI(){
   const updated = cache.find(x => x.studentNumber === selectedForCard.studentNumber) || selectedForCard;
   selectedForCard = updated;
 
-  if(printRootEl){
-    printRootEl.innerHTML = buildPrintHTML(updated);
-  }
-
   if(modalExists() && cardModal.classList.contains("show")){
     cardModalBody.innerHTML = renderCardHTML(updated);
   }
 }
 
-// Print the prepared printRoot
 function printSelectedCard(){
   if(!selectedForCard || !printRootEl) return;
+  printRootEl.innerHTML = renderPrintHTML(selectedForCard);
   window.print();
+  // afterprint will clear it
 }
+
+// Keep printRoot correct when user uses browser print menu
+window.addEventListener("beforeprint", () => {
+  if(selectedForCard && printRootEl){
+    printRootEl.innerHTML = renderPrintHTML(selectedForCard);
+  }
+});
+window.addEventListener("afterprint", () => {
+  if(printRootEl) printRootEl.innerHTML = "";
+});
 
 // ========================
 // TEACHER PASSWORD (LOCAL)
@@ -446,7 +469,7 @@ async function loadIntoForm(studentNumber){
 }
 
 // ========================
-// RENDER LIST (NO extra Print button)
+// RENDER LIST (NO extra print button)
 // ========================
 function render(list){
   if(!rowsEl || !countLine) return;
@@ -462,10 +485,10 @@ function render(list){
 
     const pwCell = pwUnlocked
       ? `<span class="pwMask"><span>${safeText(d.pw || "—")}</span>
-           <button class="eyeBtn" title="Hide PW" data-eye="hide">👁️</button>
+           <button class="eyeBtn" title="Hide PW" data-eye="hide" type="button">👁️</button>
          </span>`
       : `<span class="pwMask">${maskedPw(d.pw)}
-           <button class="eyeBtn" title="Unlock to view PW" data-eye="unlock">👁️</button>
+           <button class="eyeBtn" title="Unlock to view PW" data-eye="unlock" type="button">👁️</button>
          </span>`;
 
     return `
@@ -479,8 +502,8 @@ function render(list){
         <td>${safeText(d.chromebookNumber)}</td>
         <td>${safeText(d.note)}</td>
         <td style="text-align:right; white-space:nowrap;">
-          <button class="btn" data-edit="${sn}">Edit</button>
-          <button class="btn" data-card="${sn}">Card</button>
+          <button class="btn" data-edit="${sn}" type="button">Edit</button>
+          <button class="btn" data-card="${sn}" type="button">Card</button>
         </td>
       </tr>
     `;
@@ -743,11 +766,10 @@ if(cardModal){
   });
 }
 
-// ESC closes modal
+// ESC closes modal + Ctrl/Cmd+P prints card when modal open
 window.addEventListener("keydown", (e) => {
   if(e.key === "Escape") closeModal();
 
-  // ✅ Ctrl/Cmd + P while modal open -> print the card (no modal buttons on paper)
   if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "p"){
     if(cardModal?.classList.contains("show") && selectedForCard){
       e.preventDefault();
