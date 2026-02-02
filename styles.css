@@ -454,6 +454,7 @@ tbody td:nth-child(8){
 
 .modalPanel{
   width: min(620px, 94vw);
+  max-height: 78vh; 
   background: rgba(255,255,255,.94);
   border: 1px solid rgba(18,32,51,.14);
   border-radius: 20px;
