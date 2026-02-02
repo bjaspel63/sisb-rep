@@ -149,25 +149,25 @@
     </main><!-- ✅ closes .grid -->
   </div><!-- ✅ closes .wrap -->
 
-  <!-- ✅ Card Modal should be OUTSIDE the cards/grid -->
-  <div id="cardModal" class="modal" aria-hidden="true">
-    <div class="modalPanel" role="dialog" aria-modal="true" aria-labelledby="cardModalTitle">
-      <div class="modalHeader">
-        <h3 id="cardModalTitle">🪪 Student Card</h3>
-        <button class="iconBtn" id="closeCardModalBtn" type="button" aria-label="Close">✕</button>
-      </div>
+<!-- ✅ Card Modal -->
+<div id="cardModal" class="modal" aria-hidden="true">
+  <div class="modalPanel" role="dialog" aria-modal="true" aria-labelledby="cardModalTitle">
+    <div class="modalHeader kidHeader">
+      <h3 id="cardModalTitle">🪪 Student Card</h3>
+      <button class="iconBtn" id="closeCardModalBtn" type="button" aria-label="Close">✕</button>
+    </div>
 
-      <div id="cardModalBody" class="modalBody"></div>
+    <div id="cardModalBody" class="modalBody kidBody"></div>
 
-      <div class="modalFooter">
-        <div class="muted small" id="cardModalHint">PW will be hidden unless teacher is unlocked.</div>
-        <div class="modalActions">
-          <button class="btn" id="modalPrintBtn" type="button">Print</button>
-          <button class="btn" id="modalCloseBtn" type="button">Close</button>
-        </div>
+    <!-- ✅ No Print/Close buttons anymore -->
+    <div class="modalFooter kidFooter">
+      <div class="muted small" id="cardModalHint">
+        Tip: Press <b>Ctrl + P</b> to print (Teacher unlocked = shows PW).
       </div>
     </div>
   </div>
+</div>
+
 
   <!-- Print-only container -->
   <div id="printRoot" aria-hidden="true"></div>
