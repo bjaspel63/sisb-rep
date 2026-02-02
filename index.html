@@ -9,6 +9,7 @@
 </head>
 
 <body>
+  <!-- Optional accessibility shortcut (only shows on Tab) -->
   <a class="skipLink" href="#main">Skip to content</a>
 
   <div class="wrap">
@@ -33,66 +34,81 @@
       </div>
     </header>
 
+    <!-- ✅ App layout: form stays, list scrolls (CSS will handle it) -->
     <main id="main" class="grid" role="main">
-      <!-- LEFT: FORM -->
-      <section class="card" aria-labelledby="formTitle">
+
+      <!-- LEFT: FORM (sticky) -->
+      <section class="card formCard" aria-labelledby="formTitle">
         <h2 id="formTitle">Add Student</h2>
 
         <form id="studentForm" autocomplete="off">
+          <!-- ✅ Clean field grid: each cell contains label+input -->
           <div class="two">
-            <label for="studentNumber">
-              Student Number <span class="req">*</span>
-            </label>
-            <input id="studentNumber" required placeholder="e.g., 20260012" />
+            <div class="field">
+              <label for="studentNumber">
+                Student Number <span class="req">*</span>
+              </label>
+              <input id="studentNumber" required placeholder="e.g., 20260012" />
+            </div>
 
-            <label for="section">
-              Section <span class="req">*</span>
-            </label>
-            <input id="section" required placeholder="e.g., P3-Hope" />
+            <div class="field">
+              <label for="section">
+                Section <span class="req">*</span>
+              </label>
+              <input id="section" required placeholder="e.g., P3-Hope" />
+            </div>
           </div>
 
-          <label for="name">
-            Name <span class="req">*</span>
-          </label>
-          <input id="name" required placeholder="e.g., Jaspel Bosales" />
+          <div class="field">
+            <label for="name">
+              Name <span class="req">*</span>
+            </label>
+            <input id="name" required placeholder="e.g., Jaspel Bosales" />
+          </div>
 
           <div class="two">
-            <label for="email">
-              Email
-            </label>
-            <input id="email" type="email" placeholder="e.g., jaspel.b@sisbschool.com" />
+            <div class="field">
+              <label for="email">Email</label>
+              <input id="email" type="email" placeholder="e.g., jaspel.b@sisbschool.com" />
+            </div>
 
-            <div>
+            <div class="field">
               <label for="pw">Password</label>
               <div class="pwField">
                 <input id="pw" type="password" placeholder="Any code/label you use" />
-                <button class="eyeBtn" type="button" id="pwEyeBtn" title="Show/Hide PW" aria-label="Show or hide password">
-                  👁️
-                </button>
+                <button
+                  class="eyeBtn"
+                  type="button"
+                  id="pwEyeBtn"
+                  title="Show/Hide PW"
+                  aria-label="Show or hide password"
+                >👁️</button>
               </div>
             </div>
           </div>
 
           <div class="three">
-            <label for="tableColor">
-              Table Color <span class="req">*</span>
-            </label>
-            <select id="tableColor" required>
-              <option value="" disabled selected>Choose…</option>
-              <option value="red">Red</option>
-              <option value="blue">Blue</option>
-              <option value="yellow">Yellow</option>
-            </select>
+            <div class="field">
+              <label for="tableColor">
+                Table Color <span class="req">*</span>
+              </label>
+              <select id="tableColor" required>
+                <option value="" disabled selected>Choose…</option>
+                <option value="red">Red</option>
+                <option value="blue">Blue</option>
+                <option value="yellow">Yellow</option>
+              </select>
+            </div>
 
-            <label for="chromebookNumber">
-              Chromebook #
-            </label>
-            <input id="chromebookNumber" inputmode="numeric" placeholder="e.g., 14" />
+            <div class="field">
+              <label for="chromebookNumber">Chromebook #</label>
+              <input id="chromebookNumber" inputmode="numeric" placeholder="e.g., 14" />
+            </div>
 
-            <label for="note">
-              Note
-            </label>
-            <input id="note" placeholder="e.g., Needs charger" />
+            <div class="field">
+              <label for="note">Note</label>
+              <input id="note" placeholder="e.g., Needs charger" />
+            </div>
           </div>
 
           <div class="actions" role="group" aria-label="Form actions">
@@ -111,15 +127,19 @@
         <!-- CSV IMPORT -->
         <div class="importBox" aria-labelledby="importTitle">
           <h3 id="importTitle">📥 Import CSV</h3>
+
           <p class="muted small">
-            Columns: <code>studentNumber,name,section,email,pw,tableColor,chromebookNumber,note</code>
+            Columns:
+            <code>studentNumber,name,section,email,pw,tableColor,chromebookNumber,note</code>
           </p>
 
           <div class="importRow">
-            <label class="fileLabel" for="csvFile">Choose CSV file</label>
-            <input type="file" id="csvFile" accept=".csv,text/csv" />
+            <div class="filePick">
+              <label class="fileLabel" for="csvFile">Choose CSV file</label>
+              <input type="file" id="csvFile" accept=".csv,text/csv" />
+            </div>
 
-            <div class="actions" style="margin:0;">
+            <div class="actions importActions" role="group" aria-label="CSV actions">
               <button class="btn" id="downloadTemplateBtn" type="button">Download CSV Template</button>
               <button class="btn primary" id="importBtn" type="button">Import CSV</button>
             </div>
@@ -129,49 +149,58 @@
         </div>
       </section>
 
-      <!-- RIGHT: LIST -->
-      <section class="card" aria-labelledby="studentsTitle">
+      <!-- RIGHT: LIST (only table scrolls) -->
+      <section class="card listCard" aria-labelledby="studentsTitle">
         <div class="listHeader">
           <h2 id="studentsTitle" style="margin:0;">Students</h2>
 
           <div class="rightTools" aria-label="Search and refresh">
             <label class="srOnly" for="search">Search students</label>
-            <input id="search" class="search" placeholder="Search: number / name / section / chromebook / note…" />
+            <input
+              id="search"
+              class="search"
+              placeholder="Search: number / name / section / chromebook / note…"
+            />
             <button class="btn" id="refreshBtn" type="button">Refresh</button>
           </div>
         </div>
 
         <p class="foot muted" id="countLine" aria-live="polite">0 students</p>
 
-        <div class="tableWrap" role="region" aria-label="Students table" tabindex="0">
-          <table>
-            <thead>
-              <tr>
-                <th>Student #</th>
-                <th>Name</th>
-                <th>Section</th>
-                <th>Email</th>
-                <th>PW</th>
-                <th>Table</th>
-                <th>CB #</th>
-                <th>Note</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="rows">
-              <tr><td colspan="9" class="muted">Loading…</td></tr>
-            </tbody>
-          </table>
+        <!-- ✅ Scroll area wrapper -->
+        <div class="listBody">
+          <div class="tableWrap" role="region" aria-label="Students table" tabindex="0">
+            <table>
+              <thead>
+                <tr>
+                  <th>Student #</th>
+                  <th>Name</th>
+                  <th>Section</th>
+                  <th>Email</th>
+                  <th>PW</th>
+                  <th>Table</th>
+                  <th>CB #</th>
+                  <th>Note</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+
+              <tbody id="rows">
+                <tr><td colspan="9" class="muted">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
 
         <p class="muted small" style="margin:10px 0 0;">
-          Tip: Use <b>Card</b> to preview. Use <b>Print</b> (if enabled in your JS) to print only the card.
+          Tip: Click <b>Card</b> to preview. In the card popup, press <b>Ctrl + P</b> to print the card only.
         </p>
       </section>
+
     </main>
   </div>
 
-  <!-- ✅ Card Modal (kid header/body) -->
+  <!-- Card Modal -->
   <div id="cardModal" class="modal" aria-hidden="true">
     <div class="modalPanel" role="dialog" aria-modal="true" aria-labelledby="cardModalTitle">
       <div class="modalHeader kidHeader">
@@ -181,7 +210,7 @@
 
       <div id="cardModalBody" class="modalBody kidBody"></div>
 
-      <!-- ✅ No Print/Close buttons inside the modal -->
+      <!-- No print/close buttons inside the modal body -->
       <div class="modalFooter kidFooter">
         <div class="muted small" id="cardModalHint">
           Tip: Press <b>Ctrl + P</b> to print (Teacher unlocked = shows PW).
