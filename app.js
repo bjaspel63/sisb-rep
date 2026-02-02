@@ -24,6 +24,7 @@ const db = getFirestore(app);
 // DOM
 // ========================
 const el = (id) => document.getElementById(id);
+const pwEyeBtn = el("pwEyeBtn");
 
 const statusPill = el("statusPill");
 const teacherPill = el("teacherPill");
@@ -84,6 +85,18 @@ const TEACHER_HASH_KEY = "teacher_pw_hash_v1";
 function safeText(v){
   return (v ?? "").toString().replace(/[<>&]/g, c => ({ "<":"&lt;", ">":"&gt;", "&":"&amp;" }[c]));
 }
+
+function syncPwInputVisibility(){
+  // If teacher unlocked → allow toggling (default hidden)
+  // If locked → force hidden
+  if(!pwUnlocked){
+    pwEl.type = "password";
+    if(pwEyeBtn) pwEyeBtn.disabled = false; // still clickable to unlock
+    return;
+  }
+  // unlocked: keep whatever the user chose (default hidden)
+}
+
 
 function setStatus(text, online){
   statusPill.textContent = `● ${text}`;
@@ -207,9 +220,15 @@ async function unlockFlow(){
   }
 }
 
+setTeacherState(false);
+syncPwInputVisibility();
+
+
 function lockNow(){
   setTeacherState(false);
+  pwEl.type = "password"; 
 }
+
 
 // ========================
 // CRUD
@@ -659,6 +678,24 @@ lockBtn.addEventListener("click", () => {
     if(updated) renderCard(updated);
   }
 });
+
+pwEyeBtn.addEventListener("click", async () => {
+  if(!pwUnlocked){
+    await unlockFlow();   // asks teacher password
+    applySearch();
+    if(selectedForCard){
+      const updated = cache.find(x => x.studentNumber === selectedForCard.studentNumber);
+      if(updated) renderCard(updated);
+    }
+    // after unlock, still keep hidden by default
+    pwEl.type = "password";
+    return;
+  }
+
+  // unlocked: toggle show/hide
+  pwEl.type = (pwEl.type === "password") ? "text" : "password";
+});
+
 
 // CSV buttons
 downloadTemplateBtn.addEventListener("click", () => {
