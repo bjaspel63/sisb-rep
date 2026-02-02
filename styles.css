@@ -168,7 +168,7 @@ h3{ margin:0 0 8px; font-size:16px; }
   display:flex;
   flex-direction:column;
   min-height:0;
-  overflow:hidden;
+  overflow:auto;
 }
 
 /* Each field wrapper (your HTML uses .field) */
