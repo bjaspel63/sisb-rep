@@ -1,6 +1,3 @@
-// app.js (FULL UPDATED) — Firebase Firestore + Auth
-// Only "PW" is protected (blurred by default + 👁 toggle)
-// Fixes: DOMContentLoaded safety, null-safe wiring, render on init, snapshot error handling
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import {
@@ -120,36 +117,56 @@ window.addEventListener("DOMContentLoaded", () => {
   }
 
   // ---------- Auth modal ----------
-  function openLogin(){
-    loginModal.hidden = false;
-    if(teacherEmail) teacherEmail.value = "";
-    if(teacherPass) teacherPass.value = "";
-    teacherEmail?.focus();
+function openLogin(){
+  console.log("openLogin() ✅");
+  loginModal.removeAttribute("hidden");   // stronger than .hidden = false
+  loginModal.style.display = "flex";      // forces visible even if CSS conflicts
+  teacherEmail.value = "";
+  teacherPass.value = "";
+  teacherEmail.focus();
+}
+
+function closeLogin(){
+  console.log("closeLogin() ✅");
+  loginModal.setAttribute("hidden", "");
+  loginModal.style.display = "";          // back to CSS default
+}
+
+loginBtn.addEventListener("click", (e) => {
+  e.preventDefault();
+  console.log("Teacher Login button clicked ✅");
+  openLogin();
+});
+
+closeLoginModal?.addEventListener("click", closeLogin);
+cancelLoginBtn?.addEventListener("click", closeLogin);
+
+// Close when clicking outside the card
+loginModal.addEventListener("click", (e) => {
+  if (e.target === loginModal) closeLogin();
+});
+
+
+doLoginBtn.addEventListener("click", async ()=>{
+  console.log("Login submit clicked ✅");
+  const em = norm(teacherEmail.value);
+  const pw = norm(teacherPass.value);
+
+  if(!em || !pw){
+    alert("Enter email + password.");
+    return;
   }
-  function closeLogin(){
-    loginModal.hidden = true;
+
+  try{
+    const cred = await signInWithEmailAndPassword(auth, em, pw);
+    console.log("Login success ✅", cred.user.email);
+    closeLogin();
+  }catch(e){
+    console.error("Login failed ❌", e.code, e.message);
+    alert("Login failed: " + (e.code || e.message));
   }
+});
 
-  loginBtn.addEventListener("click", () => {
-    console.log("Teacher Login clicked ✅");
-    openLogin();
-  });
-
-  closeLoginModal?.addEventListener("click", closeLogin);
-  cancelLoginBtn?.addEventListener("click", closeLogin);
-
-  doLoginBtn?.addEventListener("click", async ()=>{
-    const em = norm(teacherEmail?.value);
-    const pw = norm(teacherPass?.value);
-    if(!em || !pw) return alert("Enter email + password.");
-    try{
-      await signInWithEmailAndPassword(auth, em, pw);
-      closeLogin();
-    }catch(e){
-      alert("Login failed: " + (e?.message || "Unknown error"));
-      console.error("Login error:", e);
-    }
-  });
 
   logoutBtn?.addEventListener("click", async ()=>{
     try{
@@ -172,6 +189,8 @@ window.addEventListener("DOMContentLoaded", () => {
       if(logoutBtn) logoutBtn.hidden = true;
       // hide all revealed PW immediately when teacher logs out
       pwVisible.clear();
+      console.log("AUTH STATE:", user ? user.email : "logged out");
+
     }
     render();
   });
