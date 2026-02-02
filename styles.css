@@ -41,16 +41,16 @@ body{
 }
 
 .wrap{
-  max-width:1180px;
-  margin:0 auto;
-  padding:var(--pad);
+  width: min(1180px, 100%);
+  margin: 0 auto;
+  padding: var(--pad);
 
-  /* ✅ turn into an app shell */
   height: 100vh;
   display:flex;
   flex-direction:column;
   gap: var(--gap);
 }
+
 
 /* hide print root on screen */
 #printRoot{ display:none; }
@@ -103,15 +103,17 @@ h1{ margin:0; font-size:28px; letter-spacing:.2px; }
    GRID (fills remaining height)
 ========================= */
 .grid{
-  flex: 1;              /* ✅ fill remaining height under header */
+  flex: 1;
   display:grid;
-  grid-template-columns: 420px 1fr;
+
+  /* ✅ IMPORTANT: allow shrinking */
+  grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
+
   gap: var(--gap);
   align-items: start;
-
-  /* ✅ no body scroll; we control scroll inside panels */
   min-height: 0;
 }
+
 
 /* =========================
    CARD
@@ -283,10 +285,27 @@ input:focus,select:focus{
   justify-content:space-between;
   gap:10px;
   margin-bottom:10px;
+
+  /* ✅ allow wrap so it doesn't overflow */
+  flex-wrap: wrap;
 }
 
-.rightTools{ display:flex; gap:10px; align-items:center; }
-.search{ min-width:260px; }
+.rightTools{
+  display:flex;
+  gap:10px;
+  align-items:center;
+
+  /* ✅ allow wrap */
+  flex-wrap: wrap;
+  justify-content:flex-end;
+}
+
+.search{
+  /* ✅ search can shrink instead of forcing overflow */
+  min-width: 180px;
+  width: min(360px, 100%);
+}
+
 
 .foot{ margin:0 0 10px; }
 
