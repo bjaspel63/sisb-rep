@@ -286,25 +286,21 @@ input:focus,select:focus{
   border:1px solid rgba(18,32,51,.10);
 }
 
-/* ✅ This is the big fix: file picker + buttons stay inside card */
 .importRow{
   display:flex;
   gap:10px;
   align-items:flex-end;
   flex-wrap:wrap;
   margin-top:10px;
+
+  /* ✅ prevents “pushing out” */
+  max-width:100%;
 }
 
 .filePick{
   flex: 1 1 320px;
-  min-width: 260px;
-}
-
-.fileLabel{
-  display:block;
-  font-weight:900;
-  font-size:13px;
-  margin:0 0 6px;
+  min-width: 240px;
+  max-width:100%;
 }
 
 #csvFile{
@@ -315,12 +311,25 @@ input:focus,select:focus{
 .importActions{
   display:flex;
   gap:10px;
-  flex: 0 0 auto;
+  flex: 1 1 260px;     
   justify-content:flex-end;
   flex-wrap:wrap;
+  max-width:100%;
 }
 
-.importActions .btn{ white-space:nowrap; }
+.importActions .btn{
+  white-space:nowrap;
+}
+
+@media (max-width: 520px){
+  .importActions{
+    justify-content:stretch;
+  }
+  .importActions .btn{
+    flex: 1 1 100%;
+    width:100%;
+  }
+}
 
 /* =========================
    RIGHT: LIST (only table scrolls)
