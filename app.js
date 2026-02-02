@@ -1,10 +1,3 @@
-// Student Database (Firestore) - Vanilla JS
-// Features:
-// - Firestore CRUD
-// - PW blur + teacher unlock (local device password)
-// - PW eye toggle in form
-// - CSV import + template download
-// - Student card preview + PRINT (now supports MODAL so no long scrolling)
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import {
@@ -43,7 +36,7 @@ const nameEl = el("name");
 const sectionEl = el("section");
 const emailEl = el("email");
 const pwEl = el("pw");
-const pwEyeBtn = el("pwEyeBtn"); // 👁️ in the form (optional)
+const pwEyeBtn = el("pwEyeBtn");
 const tableColorEl = el("tableColor");
 const chromebookNumberEl = el("chromebookNumber");
 const noteEl = el("note");
@@ -64,20 +57,18 @@ const importBtn = el("importBtn");
 const downloadTemplateBtn = el("downloadTemplateBtn");
 const importStatusEl = el("importStatus");
 
-// Card/Print (legacy right-panel area; optional to keep)
+// Print root (used for printing)
+const printRootEl = el("printRoot");
+
+// LEGACY (optional - safe if missing)
 const studentCardEl = el("studentCard");
 const printCardBtn = el("printCardBtn");
 const clearCardBtn = el("clearCardBtn");
 
-// Print root (used for printing)
-const printRootEl = el("printRoot");
-
-// MODAL (recommended)
+// MODAL
 const cardModal = el("cardModal");
 const cardModalBody = el("cardModalBody");
 const closeCardModalBtn = el("closeCardModalBtn");
-const modalCloseBtn = el("modalCloseBtn");
-const modalPrintBtn = el("modalPrintBtn");
 
 // ========================
 // STATE
@@ -160,7 +151,7 @@ function setMode(mode){
     if(saveBtn) saveBtn.textContent = "Update";
   }
 
-  // Important: never reveal PW just because we changed mode
+  // never reveal PW just because we changed mode
   if(pwEl) pwEl.type = "password";
   syncPwInputVisibility();
 }
@@ -197,10 +188,11 @@ function validateStudent(d){
 }
 
 // ========================
-// MODAL HELPERS (Card)
+// MODAL HELPERS
 // ========================
 function modalExists(){
-  return !!(cardModal && cardModalBody && modalPrintBtn && modalCloseBtn);
+  // ✅ Updated: only needs the modal and the close X
+  return !!(cardModal && cardModalBody && closeCardModalBtn);
 }
 
 function openModal(){
@@ -215,27 +207,45 @@ function closeModal(){
   cardModal.setAttribute("aria-hidden", "true");
 }
 
+// ========================
+// KID CARD (Modal)
+// ========================
 function renderCardHTML(d){
   const pwDisplay = pwUnlocked ? safeText(d.pw || "—") : "••••••••";
   const pwNote = pwUnlocked ? "" : `<span class="muted small">(Locked)</span>`;
 
   return `
-    <div class="studentCard">
-      <div class="cardTop">
-        <div>
-          <div class="cardTitle">${safeText(d.name)}</div>
-          <div class="muted small">
+    <div class="kidCard">
+      <div class="kidCardHeader">
+        <div class="kidBadge">${colorBadge(d.tableColor)}</div>
+        <div class="kidTitle">
+          <div class="kidName">🌟 ${safeText(d.name)}</div>
+          <div class="kidSub">
             Student # <b>${safeText(d.studentNumber)}</b> · Section <b>${safeText(d.section)}</b>
           </div>
         </div>
-        <div class="cardTag">${colorBadge(d.tableColor)}</div>
       </div>
 
-      <div class="cardMeta">
-        <div><b>Email</b>${safeText(d.email || "—")}</div>
-        <div><b>Chromebook #</b>${safeText(d.chromebookNumber || "—")}</div>
-        <div><b>PW</b>${pwDisplay} ${pwNote}</div>
-        <div><b>Note</b>${safeText(d.note || "—")}</div>
+      <div class="kidGrid">
+        <div class="kidItem">
+          <div class="kidKey">📧 Email</div>
+          <div class="kidVal">${safeText(d.email || "—")}</div>
+        </div>
+
+        <div class="kidItem">
+          <div class="kidKey">💻 Chromebook</div>
+          <div class="kidVal">${safeText(d.chromebookNumber || "—")}</div>
+        </div>
+
+        <div class="kidItem">
+          <div class="kidKey">🔐 PW</div>
+          <div class="kidVal">${pwDisplay} ${pwNote}</div>
+        </div>
+
+        <div class="kidItem">
+          <div class="kidKey">📌 Note</div>
+          <div class="kidVal">${safeText(d.note || "—")}</div>
+        </div>
       </div>
     </div>
   `;
@@ -244,13 +254,11 @@ function renderCardHTML(d){
 function showCard(d){
   selectedForCard = d;
 
-  // If modal exists, use it (no scrolling)
   if(modalExists()){
     cardModalBody.innerHTML = renderCardHTML(d);
-    modalPrintBtn.disabled = false;
     openModal();
-  } else {
-    // fallback to legacy right-panel area
+  }else{
+    // fallback legacy
     renderCard(d);
   }
 }
@@ -260,11 +268,9 @@ function clearSelectedCard(){
 
   if(modalExists()){
     cardModalBody.innerHTML = `<div class="muted">Select a student (click “Card”).</div>`;
-    modalPrintBtn.disabled = true;
     closeModal();
   }
 
-  // also clear legacy
   renderCard(null);
 }
 
@@ -274,12 +280,10 @@ function refreshSelectedCardUI(){
   const updated = cache.find(x => x.studentNumber === selectedForCard.studentNumber) || selectedForCard;
   selectedForCard = updated;
 
-  // update modal if open
   if(modalExists() && cardModal.classList.contains("show")){
     cardModalBody.innerHTML = renderCardHTML(updated);
   }
 
-  // update legacy card if present
   renderCard(updated);
 }
 
@@ -307,9 +311,10 @@ async function setTeacherPasswordFlow(){
   }
   const hash = await sha256(first);
   localStorage.setItem(TEACHER_HASH_KEY, hash);
+
   setTeacherState(true);
 
-  // keep form PW hidden by default after unlocking
+  // keep form PW hidden by default even if unlocked
   if(pwEl) pwEl.type = "password";
   syncPwInputVisibility();
   refreshSelectedCardUI();
@@ -374,9 +379,7 @@ async function upsertStudent(){
 
   await setDoc(ref, data, { merge: true });
 
-  if(!editingId){
-    resetForm();
-  }
+  resetForm();
   setMode("add");
 }
 
@@ -410,13 +413,15 @@ async function loadIntoForm(studentNumber){
   // Force hidden when entering edit
   if(pwEl) pwEl.type = "password";
   syncPwInputVisibility();
+
+  // nice UX: scroll form into view (mobile)
+  studentForm?.scrollIntoView?.({ behavior: "smooth", block: "start" });
 }
 
 // ========================
-// CARD + PRINT (legacy right-panel support)
+// LEGACY CARD (safe if missing)
 // ========================
 function renderCard(d){
-  // Legacy UI: only runs if these exist
   if(!studentCardEl || !printCardBtn || !clearCardBtn) return;
 
   if(!d){
@@ -434,24 +439,47 @@ function renderCard(d){
   clearCardBtn.disabled = false;
 }
 
+// ========================
+// PRINT (only #printRoot prints)
+// ========================
 function printSelectedCard(){
   if(!selectedForCard || !printRootEl) return;
 
   const d = selectedForCard;
   const pwDisplay = pwUnlocked ? (d.pw || "—") : "••••••••";
 
+  // kid print card (your CSS defines .printKidCard etc.)
   printRootEl.innerHTML = `
-    <div class="printCard">
-      <div class="title">Student Card</div>
-      <div class="printGrid">
-        <div><div class="k">Student #</div><div class="v">${safeText(d.studentNumber)}</div></div>
-        <div><div class="k">Name</div><div class="v">${safeText(d.name)}</div></div>
-        <div><div class="k">Section</div><div class="v">${safeText(d.section)}</div></div>
-        <div><div class="k">Table</div><div class="v">${safeText((d.tableColor||"").toUpperCase())}</div></div>
-        <div><div class="k">Email</div><div class="v">${safeText(d.email || "—")}</div></div>
-        <div><div class="k">Chromebook #</div><div class="v">${safeText(d.chromebookNumber || "—")}</div></div>
-        <div><div class="k">PW</div><div class="v">${safeText(pwDisplay)}</div></div>
-        <div><div class="k">Note</div><div class="v">${safeText(d.note || "—")}</div></div>
+    <div class="printKidCard">
+      <div class="printKidHeader">
+        <div class="printKidName">🌈 ${safeText(d.name)}</div>
+        <div class="printKidMeta">
+          <span>Student # <b>${safeText(d.studentNumber)}</b></span>
+          <span>Section <b>${safeText(d.section)}</b></span>
+        </div>
+      </div>
+
+      <div class="printKidGrid">
+        <div>
+          <div class="k">📧 Email</div>
+          <div class="v">${safeText(d.email || "—")}</div>
+        </div>
+        <div>
+          <div class="k">💻 Chromebook</div>
+          <div class="v">${safeText(d.chromebookNumber || "—")}</div>
+        </div>
+        <div>
+          <div class="k">🔐 PW</div>
+          <div class="v">${safeText(pwDisplay)}</div>
+        </div>
+        <div>
+          <div class="k">🎨 Table</div>
+          <div class="v">${safeText((d.tableColor||"").toUpperCase())}</div>
+        </div>
+        <div style="grid-column: 1 / -1;">
+          <div class="k">📌 Note</div>
+          <div class="v">${safeText(d.note || "—")}</div>
+        </div>
       </div>
     </div>
   `;
@@ -474,7 +502,6 @@ function render(list){
 
   rowsEl.innerHTML = list.map(d => {
     const sn = safeText(d.studentNumber);
-    const cb = safeText(d.chromebookNumber);
 
     const pwCell = pwUnlocked
       ? `<span class="pwMask"><span>${safeText(d.pw || "—")}</span>
@@ -492,11 +519,12 @@ function render(list){
         <td>${safeText(d.email)}</td>
         <td>${pwCell}</td>
         <td>${colorBadge(d.tableColor)}</td>
-        <td>${cb}</td>
+        <td>${safeText(d.chromebookNumber)}</td>
         <td>${safeText(d.note)}</td>
-        <td style="text-align:right;">
+        <td style="text-align:right; white-space:nowrap;">
           <button class="btn" data-edit="${sn}">Edit</button>
           <button class="btn" data-card="${sn}">Card</button>
+          <button class="btn primary" data-print="${sn}">Print</button>
         </td>
       </tr>
     `;
@@ -535,8 +563,6 @@ function startLive(){
     cache = snap.docs.map(s => normalizeRow(s.data()));
     applySearch();
     setStatus("Connected", true);
-
-    // Keep selected card up-to-date (modal + legacy)
     refreshSelectedCardUI();
   }, (err) => {
     console.error(err);
@@ -704,7 +730,18 @@ if(rowsEl){
     if(cardBtn){
       const id = cardBtn.getAttribute("data-card");
       const d = cache.find(x => x.studentNumber === id);
-      if(d) showCard(d); // ✅ now opens modal if present
+      if(d) showCard(d);
+      return;
+    }
+
+    const printBtn = e.target.closest("button[data-print]");
+    if(printBtn){
+      const id = printBtn.getAttribute("data-print");
+      const d = cache.find(x => x.studentNumber === id);
+      if(d){
+        selectedForCard = d;
+        printSelectedCard();
+      }
       return;
     }
 
@@ -715,7 +752,6 @@ if(rowsEl){
         await unlockFlow();
       }else{
         lockNow();
-        refreshSelectedCardUI();
       }
       applySearch();
       refreshSelectedCardUI();
@@ -723,6 +759,7 @@ if(rowsEl){
       // keep form PW hidden by default
       if(pwEl) pwEl.type = "password";
       syncPwInputVisibility();
+      return;
     }
   });
 }
@@ -755,6 +792,21 @@ if(pwEyeBtn){
     pwEl.type = (pwEl.type === "password") ? "text" : "password";
   });
 }
+
+// Ctrl+P printing (prints currently selected card if modal is open)
+window.addEventListener("keydown", (e) => {
+  if(e.key === "Escape"){
+    closeModal();
+    return;
+  }
+  // If modal open and user presses Ctrl/Cmd+P, print selected card
+  if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "p"){
+    if(cardModal?.classList.contains("show") && selectedForCard){
+      e.preventDefault();
+      printSelectedCard();
+    }
+  }
+});
 
 // CSV buttons
 if(downloadTemplateBtn){
@@ -799,10 +851,8 @@ if(importBtn){
 if(printCardBtn) printCardBtn.addEventListener("click", printSelectedCard);
 if(clearCardBtn) clearCardBtn.addEventListener("click", () => clearSelectedCard());
 
-// Modal events (recommended)
-if(modalCloseBtn) modalCloseBtn.addEventListener("click", () => closeModal());
+// Modal close events (recommended)
 if(closeCardModalBtn) closeCardModalBtn.addEventListener("click", () => closeModal());
-if(modalPrintBtn) modalPrintBtn.addEventListener("click", () => printSelectedCard());
 
 if(cardModal){
   // click outside panel closes
@@ -810,11 +860,6 @@ if(cardModal){
     if(e.target === cardModal) closeModal();
   });
 }
-
-// ESC closes modal
-window.addEventListener("keydown", (e) => {
-  if(e.key === "Escape") closeModal();
-});
 
 window.addEventListener("online", () => setStatus("Online", true));
 window.addEventListener("offline", () => setStatus("Offline", false));
@@ -828,8 +873,6 @@ setTeacherState(false);
 renderCard(null);
 
 if(modalExists()){
-  // start with modal print disabled until a student is selected
-  modalPrintBtn.disabled = true;
   cardModalBody.innerHTML = `<div class="muted">Select a student (click “Card”).</div>`;
 }
 
