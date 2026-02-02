@@ -6,6 +6,7 @@
   <title>Student Database</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
+
 <body>
   <div class="wrap">
     <header class="top">
@@ -23,7 +24,7 @@
     </header>
 
     <main class="grid">
-      <!-- FORM -->
+      <!-- LEFT: FORM -->
       <section class="card">
         <h2 id="formTitle">Add Student</h2>
 
@@ -51,19 +52,21 @@
               <input id="email" type="email" placeholder="e.g., jaspel.b@sisbschool.com" />
             </label>
 
+            <!-- ✅ FIX: this label was missing proper indentation/closing in your version -->
             <label>
-            Password
-            <div class="pwField">
-              <input id="pw" type="password" placeholder="Any code/label you use" />
-              <button class="eyeBtn" type="button" id="pwEyeBtn" title="Show/Hide PW">👁️</button>
-            </div>
-          </label>
+              PW (your meaning)
+              <div class="pwField">
+                <input id="pw" type="password" placeholder="Any code/label you use" />
+                <button class="eyeBtn" type="button" id="pwEyeBtn" title="Show/Hide PW">👁️</button>
+              </div>
+            </label>
+          </div>
 
           <div class="three">
             <label>
               Table Color <span class="req">*</span>
               <select id="tableColor" required>
-                <option value="">Choose…</option>
+                <option value="" disabled selected>Choose…</option>
                 <option value="red">Red</option>
                 <option value="blue">Blue</option>
                 <option value="yellow">Yellow</option>
@@ -101,27 +104,29 @@
             Columns: <code>studentNumber,name,section,email,pw,tableColor,chromebookNumber,note</code>
           </p>
 
-          <div class="two">
+          <div class="importRow">
             <input type="file" id="csvFile" accept=".csv,text/csv" />
-            <button class="btn" id="importBtn" type="button">Import CSV</button>
+            <div class="actions" style="margin:0;">
+              <button class="btn" id="downloadTemplateBtn" type="button">Download CSV Template</button>
+              <button class="btn primary" id="importBtn" type="button">Import CSV</button>
+            </div>
           </div>
 
-          <div class="importRow">
-            <button class="btn" id="downloadTemplateBtn" type="button">Download CSV Template</button>
-            <span class="muted small" id="importStatus"></span>
-          </div>
+          <div class="foot muted small" id="importStatus"></div>
         </div>
       </section>
 
-      <!-- LIST + CARD PRINT -->
+      <!-- RIGHT: LIST -->
       <section class="card">
         <div class="listHeader">
-          <h2>Students</h2>
+          <h2 style="margin:0;">Students</h2>
           <div class="rightTools">
             <input id="search" class="search" placeholder="Search: number / name / section / chromebook / note…" />
             <button class="btn" id="refreshBtn" type="button">Refresh</button>
           </div>
         </div>
+
+        <p class="foot muted" id="countLine">0 students</p>
 
         <div class="tableWrap">
           <table>
@@ -143,33 +148,29 @@
             </tbody>
           </table>
         </div>
+      </section>
+    </main><!-- ✅ closes .grid -->
+  </div><!-- ✅ closes .wrap -->
 
-        <p class="foot muted" id="countLine">0 students</p>
+  <!-- ✅ Card Modal should be OUTSIDE the cards/grid -->
+  <div id="cardModal" class="modal" aria-hidden="true">
+    <div class="modalPanel" role="dialog" aria-modal="true" aria-labelledby="cardModalTitle">
+      <div class="modalHeader">
+        <h3 id="cardModalTitle">🪪 Student Card</h3>
+        <button class="iconBtn" id="closeCardModalBtn" type="button" aria-label="Close">✕</button>
+      </div>
 
-        <hr class="sep"/>
+      <div id="cardModalBody" class="modalBody"></div>
 
-       
-<!-- Card Modal -->
-<div id="cardModal" class="modal" aria-hidden="true">
-  <div class="modalPanel" role="dialog" aria-modal="true" aria-labelledby="cardModalTitle">
-    <div class="modalHeader">
-      <h3 id="cardModalTitle">🪪 Student Card</h3>
-      <button class="iconBtn" id="closeCardModalBtn" type="button" aria-label="Close">✕</button>
-    </div>
-
-    <div id="cardModalBody" class="modalBody">
-      <!-- card preview injected here -->
-    </div>
-
-    <div class="modalFooter">
-      <div class="muted small" id="cardModalHint">PW will be hidden unless teacher is unlocked.</div>
-      <div class="modalActions">
-        <button class="btn" id="modalPrintBtn" type="button">Print</button>
-        <button class="btn" id="modalCloseBtn" type="button">Close</button>
+      <div class="modalFooter">
+        <div class="muted small" id="cardModalHint">PW will be hidden unless teacher is unlocked.</div>
+        <div class="modalActions">
+          <button class="btn" id="modalPrintBtn" type="button">Print</button>
+          <button class="btn" id="modalCloseBtn" type="button">Close</button>
+        </div>
       </div>
     </div>
   </div>
-</div>
 
   <!-- Print-only container -->
   <div id="printRoot" aria-hidden="true"></div>
