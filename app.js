@@ -1,5 +1,5 @@
 // Student Database (Firestore) - Vanilla JS
-// Adds: PW blur + teacher unlock + CSV import + card printing
+// Adds: PW blur + teacher unlock + CSV import + card printing + edit PW eye button
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import {
@@ -24,7 +24,6 @@ const db = getFirestore(app);
 // DOM
 // ========================
 const el = (id) => document.getElementById(id);
-const pwEyeBtn = el("pwEyeBtn");
 
 const statusPill = el("statusPill");
 const teacherPill = el("teacherPill");
@@ -39,6 +38,7 @@ const nameEl = el("name");
 const sectionEl = el("section");
 const emailEl = el("email");
 const pwEl = el("pw");
+const pwEyeBtn = el("pwEyeBtn"); // 👁️ in the form (may be null if HTML not updated)
 const tableColorEl = el("tableColor");
 const chromebookNumberEl = el("chromebookNumber");
 const noteEl = el("note");
@@ -73,10 +73,7 @@ let liveUnsub = null;
 let cache = [];
 let selectedForCard = null;
 
-// teacher unlock state (session)
-let pwUnlocked = false;
-
-// Local teacher password hash storage (browser only)
+let pwUnlocked = false; // session state only
 const TEACHER_HASH_KEY = "teacher_pw_hash_v1";
 
 // ========================
@@ -87,26 +84,36 @@ function safeText(v){
 }
 
 function syncPwInputVisibility(){
-  // If teacher unlocked → allow toggling (default hidden)
-  // If locked → force hidden
-  if(!pwUnlocked){
-    pwEl.type = "password";
-    if(pwEyeBtn) pwEyeBtn.disabled = false; // still clickable to unlock
-    return;
+  // Always force PW input hidden if locked
+  if(pwEl){
+    if(!pwUnlocked){
+      pwEl.type = "password";
+    } else {
+      // unlocked: keep current type (user may toggle), but default stays password
+      if(pwEl.type !== "text" && pwEl.type !== "password") pwEl.type = "password";
+    }
   }
-  // unlocked: keep whatever the user chose (default hidden)
 }
 
-
 function setStatus(text, online){
+  if(!statusPill) return;
   statusPill.textContent = `● ${text}`;
   statusPill.style.color = online ? "var(--good)" : "var(--muted)";
 }
 
 function setTeacherState(unlocked){
   pwUnlocked = !!unlocked;
-  teacherPill.textContent = pwUnlocked ? "👩‍🏫 PW Unlocked" : "🔒 PW Locked";
-  teacherPill.style.color = pwUnlocked ? "var(--good)" : "var(--muted)";
+  if(teacherPill){
+    teacherPill.textContent = pwUnlocked ? "👩‍🏫 PW Unlocked" : "🔒 PW Locked";
+    teacherPill.style.color = pwUnlocked ? "var(--good)" : "var(--muted)";
+  }
+  syncPwInputVisibility();
+}
+
+function lockNow(){
+  setTeacherState(false);
+  // also ensure PW input is hidden
+  if(pwEl) pwEl.type = "password";
 }
 
 function colorBadge(color){
@@ -128,33 +135,36 @@ function maskedPw(pw){
 }
 
 function setMode(mode){
+  if(!formTitle) return;
   if(mode === "add"){
     editingId = null;
     formTitle.textContent = "Add Student";
-    cancelBtn.hidden = true;
-    deleteBtn.hidden = true;
-    studentNumberEl.disabled = false;
-    saveBtn.textContent = "Save";
+    if(cancelBtn) cancelBtn.hidden = true;
+    if(deleteBtn) deleteBtn.hidden = true;
+    if(studentNumberEl) studentNumberEl.disabled = false;
+    if(saveBtn) saveBtn.textContent = "Save";
   }else{
     formTitle.textContent = "Edit Student";
-    cancelBtn.hidden = false;
-    deleteBtn.hidden = false;
-    studentNumberEl.disabled = true;
-    saveBtn.textContent = "Update";
+    if(cancelBtn) cancelBtn.hidden = false;
+    if(deleteBtn) deleteBtn.hidden = false;
+    if(studentNumberEl) studentNumberEl.disabled = true;
+    if(saveBtn) saveBtn.textContent = "Update";
   }
+  // Important: entering edit mode should not reveal PW
+  syncPwInputVisibility();
 }
 
 function resetForm(){
-  studentForm.reset();
-  chromebookNumberEl.value = "";
-  noteEl.value = "";
+  if(studentForm) studentForm.reset();
+  if(chromebookNumberEl) chromebookNumberEl.value = "";
+  if(noteEl) noteEl.value = "";
+  if(pwEl) pwEl.type = "password"; // force hidden after reset
 }
 
 function studentsCol(){ return collection(db, "students"); }
 function studentDoc(studentNumber){ return doc(db, "students", studentNumber); }
 
 function normalizeRow(obj){
-  // ensures consistent shape
   return {
     studentNumber: (obj.studentNumber ?? "").toString().trim(),
     name: (obj.name ?? "").toString().trim(),
@@ -220,29 +230,19 @@ async function unlockFlow(){
   }
 }
 
-setTeacherState(false);
-syncPwInputVisibility();
-
-
-function lockNow(){
-  setTeacherState(false);
-  pwEl.type = "password"; 
-}
-
-
 // ========================
 // CRUD
 // ========================
 async function upsertStudent(){
   const raw = normalizeRow({
-    studentNumber: studentNumberEl.value,
-    name: nameEl.value,
-    section: sectionEl.value,
-    email: emailEl.value,
-    pw: pwEl.value,
-    tableColor: tableColorEl.value,
-    chromebookNumber: chromebookNumberEl.value,
-    note: noteEl.value
+    studentNumber: studentNumberEl?.value,
+    name: nameEl?.value,
+    section: sectionEl?.value,
+    email: emailEl?.value,
+    pw: pwEl?.value,
+    tableColor: tableColorEl?.value,
+    chromebookNumber: chromebookNumberEl?.value,
+    note: noteEl?.value
   });
 
   const err = validateStudent(raw);
@@ -290,22 +290,28 @@ async function loadIntoForm(studentNumber){
   const d = normalizeRow(snap.data());
   editingId = studentNumber;
 
-  studentNumberEl.value = d.studentNumber || studentNumber;
-  nameEl.value = d.name || "";
-  sectionEl.value = d.section || "";
-  emailEl.value = d.email || "";
-  pwEl.value = d.pw || "";
-  tableColorEl.value = d.tableColor || "";
-  chromebookNumberEl.value = d.chromebookNumber || "";
-  noteEl.value = d.note || "";
+  if(studentNumberEl) studentNumberEl.value = d.studentNumber || studentNumber;
+  if(nameEl) nameEl.value = d.name || "";
+  if(sectionEl) sectionEl.value = d.section || "";
+  if(emailEl) emailEl.value = d.email || "";
+  if(pwEl) pwEl.value = d.pw || "";
+  if(tableColorEl) tableColorEl.value = d.tableColor || "";
+  if(chromebookNumberEl) chromebookNumberEl.value = d.chromebookNumber || "";
+  if(noteEl) noteEl.value = d.note || "";
 
   setMode("edit");
+
+  // ✅ Force it hidden when entering edit (prevents "haha I can see it")
+  if(pwEl) pwEl.type = "password";
+  syncPwInputVisibility();
 }
 
 // ========================
 // CARD + PRINT
 // ========================
 function renderCard(d){
+  if(!studentCardEl || !printCardBtn || !clearCardBtn) return;
+
   if(!d){
     selectedForCard = null;
     studentCardEl.classList.add("empty");
@@ -314,6 +320,7 @@ function renderCard(d){
     clearCardBtn.disabled = true;
     return;
   }
+
   selectedForCard = d;
   studentCardEl.classList.remove("empty");
 
@@ -342,7 +349,7 @@ function renderCard(d){
 }
 
 function printSelectedCard(){
-  if(!selectedForCard) return;
+  if(!selectedForCard || !printRootEl) return;
 
   const d = selectedForCard;
   const pwDisplay = pwUnlocked ? (d.pw || "—") : "••••••••";
@@ -351,38 +358,14 @@ function printSelectedCard(){
     <div class="printCard">
       <div class="title">Student Card</div>
       <div class="printGrid">
-        <div>
-          <div class="k">Student #</div>
-          <div class="v">${safeText(d.studentNumber)}</div>
-        </div>
-        <div>
-          <div class="k">Name</div>
-          <div class="v">${safeText(d.name)}</div>
-        </div>
-        <div>
-          <div class="k">Section</div>
-          <div class="v">${safeText(d.section)}</div>
-        </div>
-        <div>
-          <div class="k">Table</div>
-          <div class="v">${safeText((d.tableColor||"").toUpperCase())}</div>
-        </div>
-        <div>
-          <div class="k">Email</div>
-          <div class="v">${safeText(d.email || "—")}</div>
-        </div>
-        <div>
-          <div class="k">Chromebook #</div>
-          <div class="v">${safeText(d.chromebookNumber || "—")}</div>
-        </div>
-        <div>
-          <div class="k">PW</div>
-          <div class="v">${safeText(pwDisplay)}</div>
-        </div>
-        <div>
-          <div class="k">Note</div>
-          <div class="v">${safeText(d.note || "—")}</div>
-        </div>
+        <div><div class="k">Student #</div><div class="v">${safeText(d.studentNumber)}</div></div>
+        <div><div class="k">Name</div><div class="v">${safeText(d.name)}</div></div>
+        <div><div class="k">Section</div><div class="v">${safeText(d.section)}</div></div>
+        <div><div class="k">Table</div><div class="v">${safeText((d.tableColor||"").toUpperCase())}</div></div>
+        <div><div class="k">Email</div><div class="v">${safeText(d.email || "—")}</div></div>
+        <div><div class="k">Chromebook #</div><div class="v">${safeText(d.chromebookNumber || "—")}</div></div>
+        <div><div class="k">PW</div><div class="v">${safeText(pwDisplay)}</div></div>
+        <div><div class="k">Note</div><div class="v">${safeText(d.note || "—")}</div></div>
       </div>
     </div>
   `;
@@ -395,6 +378,8 @@ function printSelectedCard(){
 // RENDER LIST
 // ========================
 function render(list){
+  if(!rowsEl || !countLine) return;
+
   if(!list.length){
     rowsEl.innerHTML = `<tr><td colspan="9" class="muted">No students yet.</td></tr>`;
     countLine.textContent = "0 students";
@@ -435,7 +420,7 @@ function render(list){
 }
 
 function applySearch(){
-  const q = (searchEl.value || "").trim().toLowerCase();
+  const q = (searchEl?.value || "").trim().toLowerCase();
   if(!q){
     render(cache);
     return;
@@ -444,7 +429,6 @@ function applySearch(){
     const hay = [
       d.studentNumber, d.name, d.section, d.email,
       d.tableColor, d.chromebookNumber, d.note,
-      // include pw in search even if locked (teacher only usually)
       d.pw
     ].join(" ").toLowerCase();
     return hay.includes(q);
@@ -464,7 +448,6 @@ function startLive(){
     applySearch();
     setStatus("Connected", true);
 
-    // keep card updated if selected
     if(selectedForCard){
       const updated = cache.find(x => x.studentNumber === selectedForCard.studentNumber);
       if(updated) renderCard(updated);
@@ -472,7 +455,9 @@ function startLive(){
   }, (err) => {
     console.error(err);
     setStatus("Error", false);
-    rowsEl.innerHTML = `<tr><td colspan="9" class="muted">Firestore error. Check config/rules.</td></tr>`;
+    if(rowsEl){
+      rowsEl.innerHTML = `<tr><td colspan="9" class="muted">Firestore error. Check config/rules.</td></tr>`;
+    }
   });
 }
 
@@ -490,7 +475,6 @@ function downloadTextFile(filename, text){
   setTimeout(() => URL.revokeObjectURL(a.href), 800);
 }
 
-// Minimal CSV parser (handles quotes)
 function parseCSV(csvText){
   const rows = [];
   let i = 0, field = "", row = [], inQuotes = false;
@@ -510,7 +494,6 @@ function parseCSV(csvText){
       if(c === ","){ row.push(field); field = ""; i++; continue; }
       if(c === "\n"){
         row.push(field); field = "";
-        // ignore completely empty trailing row
         if(row.some(v => v.trim() !== "")) rows.push(row);
         row = []; i++; continue;
       }
@@ -518,39 +501,31 @@ function parseCSV(csvText){
       field += c; i++; continue;
     }
   }
-  // last field
+
   row.push(field);
   if(row.some(v => v.trim() !== "")) rows.push(row);
-
   return rows;
 }
 
 async function importCSVFile(file){
   const text = await file.text();
   const rows = parseCSV(text);
-  if(rows.length < 2){
-    throw new Error("CSV has no data rows.");
-  }
+  if(rows.length < 2) throw new Error("CSV has no data rows.");
 
   const header = rows[0].map(h => h.trim());
   const needed = ["studentNumber","name","section","email","pw","tableColor","chromebookNumber","note"];
 
-  // Build header map
   const idx = {};
   header.forEach((h, i) => idx[h] = i);
 
-  // Must include required columns at least studentNumber,name,section,tableColor
   const mustHave = ["studentNumber","name","section","tableColor"];
   for(const k of mustHave){
-    if(idx[k] === undefined){
-      throw new Error(`Missing column: ${k}`);
-    }
+    if(idx[k] === undefined) throw new Error(`Missing column: ${k}`);
   }
 
   let okCount = 0;
   const errors = [];
 
-  // Import sequentially (safe + simple)
   for(let r = 1; r < rows.length; r++){
     const cols = rows[r];
     const obj = {};
@@ -571,10 +546,7 @@ async function importCSVFile(file){
       const ref = studentDoc(d.studentNumber);
       const snap = await getDoc(ref);
 
-      const data = {
-        ...d,
-        updatedAt: serverTimestamp()
-      };
+      const data = { ...d, updatedAt: serverTimestamp() };
       if(!snap.exists()){
         data.createdAt = serverTimestamp();
       }else{
@@ -595,145 +567,152 @@ async function importCSVFile(file){
 // ========================
 // EVENTS
 // ========================
-studentForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  saveBtn.disabled = true;
-  try{
-    await upsertStudent();
-  }catch(err){
-    console.error(err);
-    alert("Save failed. Check Firebase config and Firestore rules.");
-  }finally{
-    saveBtn.disabled = false;
-  }
-});
-
-cancelBtn.addEventListener("click", () => {
-  resetForm();
-  setMode("add");
-});
-
-deleteBtn.addEventListener("click", async () => {
-  deleteBtn.disabled = true;
-  try{
-    await removeStudent();
-  }catch(err){
-    console.error(err);
-    alert("Delete failed. Check rules.");
-  }finally{
-    deleteBtn.disabled = false;
-  }
-});
-
-rowsEl.addEventListener("click", async (e) => {
-  const editBtn = e.target.closest("button[data-edit]");
-  if(editBtn){
-    const id = editBtn.getAttribute("data-edit");
-    loadIntoForm(id);
-    return;
-  }
-
-  const cardBtn = e.target.closest("button[data-card]");
-  if(cardBtn){
-    const id = cardBtn.getAttribute("data-card");
-    const d = cache.find(x => x.studentNumber === id);
-    if(d) renderCard(d);
-    return;
-  }
-
-  const eyeBtn = e.target.closest("button[data-eye]");
-  if(eyeBtn){
-    const action = eyeBtn.getAttribute("data-eye");
-    if(action === "unlock"){
-      await unlockFlow();
-      // rerender to show PW if unlocked
-      applySearch();
-      // refresh card state too
-      if(selectedForCard){
-        const updated = cache.find(x => x.studentNumber === selectedForCard.studentNumber);
-        if(updated) renderCard(updated);
-      }
-    }else{
-      // hide
-      lockNow();
-      applySearch();
-      if(selectedForCard){
-        const updated = cache.find(x => x.studentNumber === selectedForCard.studentNumber);
-        if(updated) renderCard(updated);
-      }
+if(studentForm){
+  studentForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if(saveBtn) saveBtn.disabled = true;
+    try{
+      await upsertStudent();
+    }catch(err){
+      console.error(err);
+      alert("Save failed. Check Firebase config and Firestore rules.");
+    }finally{
+      if(saveBtn) saveBtn.disabled = false;
     }
-  }
-});
+  });
+}
 
-searchEl.addEventListener("input", applySearch);
-refreshBtn.addEventListener("click", startLive);
+if(cancelBtn){
+  cancelBtn.addEventListener("click", () => {
+    resetForm();
+    setMode("add");
+  });
+}
 
-// Teacher password buttons
-setTeacherPassBtn.addEventListener("click", setTeacherPasswordFlow);
-lockBtn.addEventListener("click", () => {
-  lockNow();
-  applySearch();
-  if(selectedForCard){
-    const updated = cache.find(x => x.studentNumber === selectedForCard.studentNumber);
-    if(updated) renderCard(updated);
-  }
-});
+if(deleteBtn){
+  deleteBtn.addEventListener("click", async () => {
+    deleteBtn.disabled = true;
+    try{
+      await removeStudent();
+    }catch(err){
+      console.error(err);
+      alert("Delete failed. Check rules.");
+    }finally{
+      deleteBtn.disabled = false;
+    }
+  });
+}
 
-pwEyeBtn.addEventListener("click", async () => {
-  if(!pwUnlocked){
-    await unlockFlow();   // asks teacher password
+if(rowsEl){
+  rowsEl.addEventListener("click", async (e) => {
+    const editBtn = e.target.closest("button[data-edit]");
+    if(editBtn){
+      const id = editBtn.getAttribute("data-edit");
+      loadIntoForm(id);
+      return;
+    }
+
+    const cardBtn = e.target.closest("button[data-card]");
+    if(cardBtn){
+      const id = cardBtn.getAttribute("data-card");
+      const d = cache.find(x => x.studentNumber === id);
+      if(d) renderCard(d);
+      return;
+    }
+
+    const eyeBtn = e.target.closest("button[data-eye]");
+    if(eyeBtn){
+      const action = eyeBtn.getAttribute("data-eye");
+      if(action === "unlock"){
+        await unlockFlow();
+      }else{
+        lockNow();
+      }
+      applySearch();
+      if(selectedForCard){
+        const updated = cache.find(x => x.studentNumber === selectedForCard.studentNumber);
+        if(updated) renderCard(updated);
+      }
+      // keep form PW hidden by default
+      if(pwEl) pwEl.type = "password";
+      syncPwInputVisibility();
+    }
+  });
+}
+
+if(searchEl) searchEl.addEventListener("input", applySearch);
+if(refreshBtn) refreshBtn.addEventListener("click", startLive);
+
+if(setTeacherPassBtn) setTeacherPassBtn.addEventListener("click", setTeacherPasswordFlow);
+
+if(lockBtn){
+  lockBtn.addEventListener("click", () => {
+    lockNow();
     applySearch();
     if(selectedForCard){
       const updated = cache.find(x => x.studentNumber === selectedForCard.studentNumber);
       if(updated) renderCard(updated);
     }
-    // after unlock, still keep hidden by default
-    pwEl.type = "password";
-    return;
-  }
+  });
+}
 
-  // unlocked: toggle show/hide
-  pwEl.type = (pwEl.type === "password") ? "text" : "password";
-});
-
+// 👁️ button inside the form input
+if(pwEyeBtn){
+  pwEyeBtn.addEventListener("click", async () => {
+    if(!pwUnlocked){
+      await unlockFlow();
+      // after unlock, keep hidden unless teacher toggles again
+      if(pwEl) pwEl.type = "password";
+      syncPwInputVisibility();
+      return;
+    }
+    if(!pwEl) return;
+    pwEl.type = (pwEl.type === "password") ? "text" : "password";
+  });
+}
 
 // CSV buttons
-downloadTemplateBtn.addEventListener("click", () => {
-  const template =
+if(downloadTemplateBtn){
+  downloadTemplateBtn.addEventListener("click", () => {
+    const template =
 `studentNumber,name,section,email,pw,tableColor,chromebookNumber,note
 20260012,Alex Santos,P3-Ruby,alex@email.com,SamplePW,red,14,Needs charger
 20260013,Mia Cruz,P3-Ruby,mia@email.com,,blue,7,
 `;
-  downloadTextFile("students_template.csv", template);
-});
+    downloadTextFile("students_template.csv", template);
+  });
+}
 
-importBtn.addEventListener("click", async () => {
-  const file = csvFileEl.files?.[0];
-  if(!file){
-    alert("Choose a CSV file first.");
-    return;
-  }
-
-  importBtn.disabled = true;
-  importStatusEl.textContent = "Importing…";
-  try{
-    const res = await importCSVFile(file);
-    importStatusEl.textContent = `Imported: ${res.okCount}. Errors: ${res.errors.length}`;
-    if(res.errors.length){
-      alert("Some rows failed:\n\n" + res.errors.slice(0, 20).join("\n") + (res.errors.length > 20 ? "\n…more" : ""));
+if(importBtn){
+  importBtn.addEventListener("click", async () => {
+    const file = csvFileEl?.files?.[0];
+    if(!file){
+      alert("Choose a CSV file first.");
+      return;
     }
-  }catch(err){
-    console.error(err);
-    alert(err.message || "CSV import failed.");
-    importStatusEl.textContent = "Import failed.";
-  }finally{
-    importBtn.disabled = false;
-  }
-});
+
+    importBtn.disabled = true;
+    if(importStatusEl) importStatusEl.textContent = "Importing…";
+
+    try{
+      const res = await importCSVFile(file);
+      if(importStatusEl) importStatusEl.textContent = `Imported: ${res.okCount}. Errors: ${res.errors.length}`;
+      if(res.errors.length){
+        alert("Some rows failed:\n\n" + res.errors.slice(0, 20).join("\n") + (res.errors.length > 20 ? "\n…more" : ""));
+      }
+    }catch(err){
+      console.error(err);
+      alert(err.message || "CSV import failed.");
+      if(importStatusEl) importStatusEl.textContent = "Import failed.";
+    }finally{
+      importBtn.disabled = false;
+    }
+  });
+}
 
 // Print
-printCardBtn.addEventListener("click", printSelectedCard);
-clearCardBtn.addEventListener("click", () => renderCard(null));
+if(printCardBtn) printCardBtn.addEventListener("click", printSelectedCard);
+if(clearCardBtn) clearCardBtn.addEventListener("click", () => renderCard(null));
 
 window.addEventListener("online", () => setStatus("Online", true));
 window.addEventListener("offline", () => setStatus("Offline", false));
@@ -743,6 +722,6 @@ window.addEventListener("offline", () => setStatus("Offline", false));
 // ========================
 setMode("add");
 setStatus(navigator.onLine ? "Online" : "Offline", navigator.onLine);
-setTeacherState(false);
+setTeacherState(false);     // single source of truth
 renderCard(null);
 startLive();
