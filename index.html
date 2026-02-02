@@ -32,15 +32,13 @@
       </div>
     </header>
 
-    <!-- ✅ App layout: form stays, list scrolls (CSS will handle it) -->
     <main id="main" class="grid" role="main">
 
-      <!-- LEFT: FORM (sticky) -->
+      <!-- LEFT: FORM -->
       <section class="card formCard" aria-labelledby="formTitle">
         <h2 id="formTitle">Add Student</h2>
 
         <form id="studentForm" autocomplete="off">
-          <!-- ✅ Clean field grid: each cell contains label+input -->
           <div class="two">
             <div class="field">
               <label for="studentNumber">
@@ -123,26 +121,26 @@
         <hr class="sep" />
 
         <!-- CSV IMPORT -->
-<div class="importBox" aria-labelledby="importTitle">
-  <h3 id="importTitle">📥 Import CSV</h3>
+        <div class="importBox" aria-labelledby="importTitle">
+          <h3 id="importTitle">📥 Import CSV</h3>
 
-  <div class="importRow">
-    <div class="filePick">
-      <label class="fileLabel" for="csvFile">Choose CSV file</label>
-      <input type="file" id="csvFile" accept=".csv,text/csv" />
-    </div>
+          <div class="importRow">
+            <div class="filePick">
+              <label class="fileLabel" for="csvFile">Choose CSV file</label>
+              <input type="file" id="csvFile" accept=".csv,text/csv" />
+            </div>
 
-    <div class="importActions" role="group" aria-label="CSV actions">
-      <button class="btn" id="downloadTemplateBtn" type="button">Download CSV Template</button>
-      <button class="btn primary" id="importBtn" type="button">Import CSV</button>
-    </div>
-  </div>
+            <div class="importActions" role="group" aria-label="CSV actions">
+              <button class="btn" id="downloadTemplateBtn" type="button">Download CSV Template</button>
+              <button class="btn primary" id="importBtn" type="button">Import CSV</button>
+            </div>
+          </div>
 
-  <div class="foot muted small" id="importStatus" aria-live="polite"></div>
-</div>
+          <div class="foot muted small" id="importStatus" aria-live="polite"></div>
+        </div>
+      </section> <!-- ✅ THIS WAS MISSING -->
 
-
-      <!-- RIGHT: LIST (only table scrolls) -->
+      <!-- RIGHT: LIST -->
       <section class="card listCard" aria-labelledby="studentsTitle">
         <div class="listHeader">
           <h2 id="studentsTitle" style="margin:0;">Students</h2>
@@ -160,7 +158,6 @@
 
         <p class="foot muted" id="countLine" aria-live="polite">0 students</p>
 
-        <!-- ✅ Scroll area wrapper -->
         <div class="listBody">
           <div class="tableWrap" role="region" aria-label="Students table" tabindex="0">
             <table>
@@ -203,7 +200,6 @@
 
       <div id="cardModalBody" class="modalBody kidBody"></div>
 
-      <!-- No print/close buttons inside the modal body -->
       <div class="modalFooter kidFooter">
         <div class="muted small" id="cardModalHint">
           Tip: Press <b>Ctrl + P</b> to print (Teacher unlocked = shows PW).
@@ -212,7 +208,6 @@
     </div>
   </div>
 
-  <!-- Print-only container -->
   <div id="printRoot" aria-hidden="true"></div>
 
   <script type="module" src="app.js"></script>
