@@ -213,49 +213,47 @@ function closeModal(){
   cardModal.setAttribute("aria-hidden", "true");
 }
 
-// ========================
-// CARD HTML (kid style) - matches your CSS (.studentCard.kidCard, etc.)
-// ========================
-function renderStripHTML(d, mode = "screen"){
+function renderCardUnifiedHTML(d){
   const ini = initials(d.name);
   const table = tableLabel(d.tableColor);
-
-  // PW: show locked bullets unless teacher unlocked
   const pwDisplay = pwUnlocked ? (d.pw || "—") : "••••••••";
-  const pwNote = (!pwUnlocked && mode === "screen") ? `<span class="stripLock">(Locked)</span>` : "";
+  const pwLock = pwUnlocked ? "" : `<span class="muted small">(Locked)</span>`;
 
   return `
-    <div class="stripCard kidStrip">
-      <div class="stripBar"></div>
-
-      <div class="stripRow">
-        <div class="stripAvatar" aria-hidden="true">${safeText(ini)}</div>
+    <div class="studentCard kidCard stripSame">
+      <div class="stripTop">
+        <div class="kidAvatar" aria-hidden="true">${safeText(ini)}</div>
 
         <div class="stripMain">
-          <div class="stripName">${safeText(d.name || "—")}</div>
-          <div class="stripLine"># ${safeText(d.studentNumber || "—")} · ${safeText(d.section || "—")}</div>
-          <div class="stripLine">Email: ${safeText(d.email || "—")}</div>
-          <div class="stripLine">Note: ${safeText(d.note || "—")}</div>
+          <p class="kidName">${safeText(d.name || "—")}</p>
+          <p class="kidLine"># <b>${safeText(d.studentNumber || "—")}</b> · Section <b>${safeText(d.section || "—")}</b></p>
+          <p class="kidLine">Email: <b>${safeText(d.email || "—")}</b></p>
         </div>
 
-        <div class="stripMeta">
-          <div class="stripPill">TABLE ${safeText(table)}</div>
-          <div class="stripTiny">CB: ${safeText(d.chromebookNumber || "—")}</div>
-          <div class="stripTiny">PW: ${safeText(pwDisplay)} ${pwNote}</div>
+        <div class="stripSide">
+          <div class="kidSticker">
+            <span class="dot ${(d.tableColor||"red").toLowerCase()}"></span>
+            TABLE ${safeText(table)}
+          </div>
+          <div class="stripMini">CB: <b>${safeText(d.chromebookNumber || "—")}</b></div>
+          <div class="stripMini">PW: <b>${safeText(pwDisplay)}</b> ${pwLock}</div>
         </div>
+      </div>
+
+      <div class="stripNote">
+        <b>Note:</b> ${safeText(d.note || "—")}
       </div>
     </div>
   `;
 }
 
 function renderCardHTML(d){
-  return renderStripHTML(d, "screen");
+  return renderCardUnifiedHTML(d);   // modal
 }
 
 function renderPrintHTML(d){
-  return renderStripHTML(d, "print");
+  return renderCardUnifiedHTML(d);   // print (same html)
 }
-
 
 
 function showCard(d){
