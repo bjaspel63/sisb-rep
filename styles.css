@@ -663,26 +663,6 @@ tbody td:nth-child(8){
     overflow: visible !important;
   }
 
-  {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-
-  .stripBar{
-    background: linear-gradient(90deg, var(--kidA), var(--kidB), var(--kidC)) !important;
-  }
-
-  /* Make sure the dots print as solid colors */
-  .dot.red{ background: #ef4444 !important; }
-  .dot.blue{ background: #3b82f6 !important; }
-  .dot.yellow{ background: #f59e0b !important; }
-
-  .stripAvatar{
-    background: linear-gradient(135deg, rgba(255,122,182,.55), rgba(123,220,255,.55)) !important;
-  }
-}
-
-
   .wrap{ display:none !important; }
   .modal{ display:none !important; }
   #printRoot{ display:block !important; padding:0 !important; }
