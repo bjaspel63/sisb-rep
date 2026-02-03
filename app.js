@@ -276,38 +276,25 @@ function renderPrintHTML(d){
 
   return `
     <div class="printCard kidPrint">
-      <div class="printHeader">
-        <div class="printAvatar" aria-hidden="true">${safeText(ini)}</div>
+      <div class="stripRow">
+        <div class="stripAvatar" aria-hidden="true">${safeText(ini)}</div>
 
-        <div>
-          <div class="printName">${safeText(d.name || "—")}</div>
-          <div class="printMini"># ${safeText(d.studentNumber || "—")} · ${safeText(d.section || "—")}</div>
+        <div class="stripMain">
+          <p class="stripName">${safeText(d.name || "—")}</p>
+          <p class="stripLine"># ${safeText(d.studentNumber || "—")} · ${safeText(d.section || "—")}</p>
+          <p class="stripLine">Email: ${safeText(d.email || "—")}</p>
         </div>
 
-        <div class="printSticker">TABLE ${safeText(table)}</div>
-      </div>
-
-      <div class="printGrid">
-        <div>
-          <div class="k">Email</div>
-          <div class="v">${safeText(d.email || "—")}</div>
-        </div>
-        <div>
-          <div class="k">Chromebook #</div>
-          <div class="v">${safeText(d.chromebookNumber || "—")}</div>
-        </div>
-        <div>
-          <div class="k">Password</div>
-          <div class="v">${safeText(pwDisplay)}</div>
-        </div>
-        <div>
-          <div class="k">Note</div>
-          <div class="v">${safeText(d.note || "—")}</div>
+        <div class="stripMeta">
+          <div class="stripPill">TABLE ${safeText(table)}</div>
+          <div class="stripTiny">CB: ${safeText(d.chromebookNumber || "—")}</div>
+          <div class="stripTiny">PW: ${safeText(pwDisplay)}</div>
         </div>
       </div>
     </div>
   `;
 }
+
 
 function showCard(d){
   selectedForCard = d;
