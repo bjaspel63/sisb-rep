@@ -244,7 +244,7 @@ function renderCardHTML(d){
       <div class="kidGrid">
         <div class="kidCell">
           <b>Email</b>
-          <div class="kidValue wrap">${safeText(d.email || "—")}</div>
+          <div class="kidValue">${safeText(d.email || "—")}</div>
         </div>
 
         <div class="kidCell">
@@ -257,10 +257,11 @@ function renderCardHTML(d){
           <div class="kidValue">${pwDisplay} ${pwNote}</div>
         </div>
 
-        <div class="kidCell">
-          <b>Note</b>
-          <div class="kidValue wrap">${safeText(d.note || "—")}</div>
-        </div>
+        <div class="kidCell noteCell">
+  <b>Note</b>
+  <div class="kidValue">${safeText(d.note || "—")}</div>
+</div>
+
       </div>
     </div>
   `;
