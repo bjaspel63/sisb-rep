@@ -668,23 +668,39 @@ tbody td:nth-child(8){
 
   .wrap{ display:none !important; }
   .modal{ display:none !important; }
-  #printRoot{ display:block !important; padding:0 !important; }
+  #printRoot{
+    display:block !important;
+    padding:0 !important;
+  }
 
   @page{ margin: 0.3in; }
 
 
+  .printSheet{
+    display:flex;
+    flex-wrap:wrap;
+    gap: 0.12in;              
+    align-content:flex-start;
+  }
+
+
+  .printSheet > *{
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+
   .stripCard.kidStrip,
   .printCard.kidPrint{
-    width: 3.5in;
-    height: 1.15in;
+    width: 3.5in !important;
+    height: 1.15in !important;
     border: 2px solid #111 !important;
-    border-radius: 14px;
+    border-radius: 14px !important;
     background:#fff !important;
     box-shadow: none !important;
     overflow: hidden !important;
     position: relative !important;
   }
-
 
   .stripBar{
     height: 8px !important;
@@ -693,7 +709,7 @@ tbody td:nth-child(8){
 
 
   .stripRow{
-    height: 100%;
+    height: 100% !important;
     padding: 10px 10px 9px !important;
     padding-top: 15px !important; /* space under stripBar */
     gap: 10px !important;
@@ -748,3 +764,4 @@ tbody td:nth-child(8){
     line-height: 1.1 !important;
   }
 }
+
