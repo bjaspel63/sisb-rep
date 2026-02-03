@@ -64,6 +64,10 @@ const cardModal = el("cardModal");
 const cardModalBody = el("cardModalBody");
 const closeCardModalBtn = el("closeCardModalBtn");
 
+// ✅ BULK PRINT BUTTONS (add these IDs in your HTML)
+const bulkPrintFilteredBtn = el("bulkPrintFilteredBtn");
+const bulkPrintAllBtn = el("bulkPrintAllBtn");
+
 // ========================
 // STATE
 // ========================
@@ -108,9 +112,13 @@ function lockNow(){
   if(pwEl) pwEl.type = "password";
 }
 
+function normalizeColor(color){
+  const c = (color || "").toLowerCase().trim();
+  return (c === "red" || c === "blue" || c === "yellow") ? c : "red";
+}
+
 function colorBadge(color){
-  const c = (color || "").toLowerCase();
-  const ok = (c === "red" || c === "blue" || c === "yellow") ? c : "red";
+  const ok = normalizeColor(color);
   return `
     <span class="badge">
       <span class="dot ${ok}"></span>
@@ -131,11 +139,6 @@ function initials(name){
   if(!s) return "🙂";
   const parts = s.split(/\s+/).slice(0,2);
   return parts.map(p => (p[0] || "").toUpperCase()).join("") || "🙂";
-}
-
-function normalizeColor(color){
-  const c = (color || "").toLowerCase().trim();
-  return (c === "red" || c === "blue" || c === "yellow") ? c : "red";
 }
 
 function tableLabel(color){
@@ -181,7 +184,7 @@ function normalizeRow(obj){
     section: (obj.section ?? "").toString().trim(),
     email: (obj.email ?? "").toString().trim(),
     pw: (obj.pw ?? "").toString().trim(),
-    tableColor: (obj.tableColor ?? "").toString().trim().toLowerCase(),
+    tableColor: normalizeColor(obj.tableColor),
     chromebookNumber: (obj.chromebookNumber ?? "").toString().trim(),
     note: (obj.note ?? "").toString().trim(),
   };
@@ -217,6 +220,7 @@ function closeModal(){
 /* =========================================================
    ✅ ONE HTML FOR BOTH MODAL + PRINT (strip card)
    Matches the CSS: .stripCard.kidStrip + children
+   ✅ Fix: email no longer “cut” (separate line + print CSS clamps)
 ========================================================= */
 function renderStripCardHTML(d){
   const ini = initials(d.name);
@@ -241,7 +245,8 @@ function renderStripCardHTML(d){
         <div class="stripMain">
           <p class="stripName">${safeText(d.name || "—")}</p>
           <p class="stripLine">${line1}</p>
-          <p class="stripLine">Email: ${email} · Note: ${note}</p>
+          <p class="stripLine emailLine">Email: ${email}</p>
+          <p class="stripLine noteLine">Note: ${note}</p>
         </div>
 
         <div class="stripMeta">
@@ -257,7 +262,6 @@ function renderStripCardHTML(d){
   `;
 }
 
-/* ✅ modal and print now use the SAME html */
 function renderCardHTML(d){ return renderStripCardHTML(d); }
 function renderPrintHTML(d){ return renderStripCardHTML(d); }
 
@@ -288,13 +292,46 @@ function printSelectedCard(){
 
 // Keep printRoot correct when user uses browser print menu
 window.addEventListener("beforeprint", () => {
-  if(selectedForCard && printRootEl){
+  // If bulk already rendered, keep it.
+  // If modal card selected and printRoot empty, render selected.
+  if(selectedForCard && printRootEl && !printRootEl.innerHTML.trim()){
     printRootEl.innerHTML = renderPrintHTML(selectedForCard);
   }
 });
 window.addEventListener("afterprint", () => {
   if(printRootEl) printRootEl.innerHTML = "";
 });
+
+// ========================
+// ✅ BULK PRINT (Filtered / All)
+// ========================
+function getFilteredList(){
+  const q = (searchEl?.value || "").trim().toLowerCase();
+  if(!q) return cache.slice();
+
+  return cache.filter(d => {
+    const hay = [
+      d.studentNumber, d.name, d.section, d.email,
+      d.tableColor, d.chromebookNumber, d.note, d.pw
+    ].join(" ").toLowerCase();
+    return hay.includes(q);
+  });
+}
+
+function printBulk(list){
+  if(!printRootEl) return;
+  if(!list.length){
+    alert("No students to print.");
+    return;
+  }
+
+  // Sheet wrapper used by your @media print (.printSheet)
+  printRootEl.innerHTML = `<div class="printSheet">
+    ${list.map(renderPrintHTML).join("")}
+  </div>`;
+
+  window.print();
+}
 
 // ========================
 // TEACHER PASSWORD (LOCAL)
@@ -408,7 +445,7 @@ async function loadIntoForm(studentNumber){
   if(sectionEl) sectionEl.value = d.section || "";
   if(emailEl) emailEl.value = d.email || "";
   if(pwEl) pwEl.value = d.pw || "";
-  if(tableColorEl) tableColorEl.value = d.tableColor || "";
+  if(tableColorEl) tableColorEl.value = d.tableColor || "red";
   if(chromebookNumberEl) chromebookNumberEl.value = d.chromebookNumber || "";
   if(noteEl) noteEl.value = d.note || "";
 
@@ -707,6 +744,19 @@ if(pwEyeBtn){
   });
 }
 
+// ✅ Bulk print buttons
+if(bulkPrintFilteredBtn){
+  bulkPrintFilteredBtn.addEventListener("click", () => {
+    const list = getFilteredList();
+    printBulk(list);
+  });
+}
+if(bulkPrintAllBtn){
+  bulkPrintAllBtn.addEventListener("click", () => {
+    printBulk(cache.slice());
+  });
+}
+
 // Modal close
 if(closeCardModalBtn) closeCardModalBtn.addEventListener("click", () => closeModal());
 
@@ -782,3 +832,5 @@ if(modalExists()){
 }
 
 startLive();
+
+
