@@ -1,5 +1,3 @@
-
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import {
   getFirestore, doc, setDoc, getDoc, deleteDoc,
@@ -135,10 +133,13 @@ function initials(name){
   return parts.map(p => (p[0] || "").toUpperCase()).join("") || "🙂";
 }
 
+function normalizeColor(color){
+  const c = (color || "").toLowerCase().trim();
+  return (c === "red" || c === "blue" || c === "yellow") ? c : "red";
+}
+
 function tableLabel(color){
-  const c = (color || "").toLowerCase();
-  const ok = (c === "red" || c === "blue" || c === "yellow") ? c : "red";
-  return ok.toUpperCase();
+  return normalizeColor(color).toUpperCase();
 }
 
 function setMode(mode){
@@ -213,52 +214,55 @@ function closeModal(){
   cardModal.setAttribute("aria-hidden", "true");
 }
 
-function renderCardUnifiedHTML(d){
+/* =========================================================
+   ✅ ONE HTML FOR BOTH MODAL + PRINT (strip card)
+   Matches the CSS: .stripCard.kidStrip + children
+========================================================= */
+function renderStripCardHTML(d){
   const ini = initials(d.name);
-  const table = tableLabel(d.tableColor);
+  const okColor = normalizeColor(d.tableColor);
+  const table = tableLabel(okColor);
+
   const pwDisplay = pwUnlocked ? (d.pw || "—") : "••••••••";
-  const pwLock = pwUnlocked ? "" : `<span class="muted small">(Locked)</span>`;
+  const pwLock = pwUnlocked ? "" : `<span class="stripLock">(Locked)</span>`;
+
+  const line1 = `# ${safeText(d.studentNumber || "—")} · ${safeText(d.section || "—")}`;
+  const email = safeText(d.email || "—");
+  const cb = safeText(d.chromebookNumber || "—");
+  const note = safeText(d.note || "—");
 
   return `
-    <div class="studentCard kidCard stripSame">
-      <div class="stripTop">
-        <div class="kidAvatar" aria-hidden="true">${safeText(ini)}</div>
+    <div class="stripCard kidStrip">
+      <div class="stripBar" aria-hidden="true"></div>
+
+      <div class="stripRow">
+        <div class="stripAvatar" aria-hidden="true">${safeText(ini)}</div>
 
         <div class="stripMain">
-          <p class="kidName">${safeText(d.name || "—")}</p>
-          <p class="kidLine"># <b>${safeText(d.studentNumber || "—")}</b> · Section <b>${safeText(d.section || "—")}</b></p>
-          <p class="kidLine">Email: <b>${safeText(d.email || "—")}</b></p>
+          <p class="stripName">${safeText(d.name || "—")}</p>
+          <p class="stripLine">${line1}</p>
+          <p class="stripLine">Email: ${email} · Note: ${note}</p>
         </div>
 
-        <div class="stripSide">
-          <div class="kidSticker">
-            <span class="dot ${(d.tableColor||"red").toLowerCase()}"></span>
+        <div class="stripMeta">
+          <div class="stripPill">
+            <span class="dot ${okColor}"></span>
             TABLE ${safeText(table)}
           </div>
-          <div class="stripMini">CB: <b>${safeText(d.chromebookNumber || "—")}</b></div>
-          <div class="stripMini">PW: <b>${safeText(pwDisplay)}</b> ${pwLock}</div>
+          <div class="stripTiny">CB: <b>${cb}</b></div>
+          <div class="stripTiny">PW: <b>${safeText(pwDisplay)}</b> ${pwLock}</div>
         </div>
-      </div>
-
-      <div class="stripNote">
-        <b>Note:</b> ${safeText(d.note || "—")}
       </div>
     </div>
   `;
 }
 
-function renderCardHTML(d){
-  return renderCardUnifiedHTML(d);   // modal
-}
-
-function renderPrintHTML(d){
-  return renderCardUnifiedHTML(d);   // print (same html)
-}
-
+/* ✅ modal and print now use the SAME html */
+function renderCardHTML(d){ return renderStripCardHTML(d); }
+function renderPrintHTML(d){ return renderStripCardHTML(d); }
 
 function showCard(d){
   selectedForCard = d;
-
   if(modalExists()){
     cardModalBody.innerHTML = renderCardHTML(d);
     openModal();
@@ -280,7 +284,6 @@ function printSelectedCard(){
   if(!selectedForCard || !printRootEl) return;
   printRootEl.innerHTML = renderPrintHTML(selectedForCard);
   window.print();
-  // afterprint will clear it
 }
 
 // Keep printRoot correct when user uses browser print menu
@@ -416,7 +419,7 @@ async function loadIntoForm(studentNumber){
 }
 
 // ========================
-// RENDER LIST (NO extra print button)
+// RENDER LIST
 // ========================
 function render(list){
   if(!rowsEl || !countLine) return;
