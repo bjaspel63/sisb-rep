@@ -654,10 +654,13 @@ tbody td:nth-child(8){
   .stripLine{ font-size: 11px; }
 }
 
-/* =========================
-   PRINT (same strip, fixed paper size)
-========================= */
 @media print{
+
+  *{
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
   body{
     background:#fff !important;
     overflow: visible !important;
@@ -669,30 +672,79 @@ tbody td:nth-child(8){
 
   @page{ margin: 0.3in; }
 
-  /* print container (both aliases) */
+
   .stripCard.kidStrip,
   .printCard.kidPrint{
     width: 3.5in;
     height: 1.15in;
-    border: 2px solid #111;
+    border: 2px solid #111 !important;
+    border-radius: 14px;
+    background:#fff !important;
     box-shadow: none !important;
+    overflow: hidden !important;
+    position: relative !important;
   }
+
+
+  .stripBar{
+    height: 8px !important;
+    background: linear-gradient(90deg, var(--kidA), var(--kidB), var(--kidC)) !important;
+  }
+
 
   .stripRow{
     height: 100%;
-    padding: 10px 10px 9px;
-    padding-top: 15px;
-    gap:10px;
+    padding: 10px 10px 9px !important;
+    padding-top: 15px !important; /* space under stripBar */
+    gap: 10px !important;
+    align-items: center !important;
   }
+
 
   .stripAvatar{
-    width:40px;
-    height:40px;
-    border:2px solid rgba(0,0,0,.12);
+    width: 40px !important;
+    height: 40px !important;
+    border: 2px solid rgba(0,0,0,.12) !important;
+    background: linear-gradient(135deg, rgba(255,122,182,.55), rgba(123,220,255,.55)) !important;
   }
 
-  .stripName{ font-size: 12.5px; }
-  .stripLine{ font-size: 9px; margin-top:3px; }
-  .stripPill{ font-size: 9px; padding:5px 8px; }
-  .stripTiny{ font-size: 8.5px; }
+
+  .dot.red{ background:#ef4444 !important; }
+  .dot.blue{ background:#3b82f6 !important; }
+  .dot.yellow{ background:#f59e0b !important; }
+
+
+  .stripName{
+    font-size: 12.5px !important;
+    line-height: 1.05 !important;
+  }
+
+  .stripLine{
+    font-size: 9px !important;
+    margin-top: 3px !important;
+    line-height: 1.1 !important;
+  }
+
+
+  .stripLine.emailLine,
+  .stripLine.noteLine{
+    white-space: normal !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+  }
+
+
+  .stripPill{
+    font-size: 9px !important;
+    padding: 5px 8px !important;
+    border: 2px solid rgba(0,0,0,.12) !important;
+    background:#fff !important;
+  }
+
+  .stripTiny{
+    font-size: 8.5px !important;
+    line-height: 1.1 !important;
+  }
 }
