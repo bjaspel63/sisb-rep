@@ -216,85 +216,46 @@ function closeModal(){
 // ========================
 // CARD HTML (kid style) - matches your CSS (.studentCard.kidCard, etc.)
 // ========================
-function renderCardHTML(d){
-  const pwDisplay = pwUnlocked ? safeText(d.pw || "—") : "••••••••";
-  const pwNote = pwUnlocked ? "" : `<span class="muted small">(Locked)</span>`;
+function renderStripHTML(d, mode = "screen"){
   const ini = initials(d.name);
   const table = tableLabel(d.tableColor);
 
-  return `
-    <div class="studentCard kidCard">
-      <div class="kidTop">
-        <div class="kidAvatar" aria-hidden="true">${safeText(ini)}</div>
-
-        <div>
-          <p class="kidName">${safeText(d.name || "—")}</p>
-          <p class="kidLine">
-            # <b>${safeText(d.studentNumber || "—")}</b> ·
-            Section <b>${safeText(d.section || "—")}</b>
-          </p>
-        </div>
-
-        <div class="kidSticker">
-          <span class="dot ${safeText((d.tableColor||"red").toLowerCase())}"></span>
-          TABLE ${safeText(table)}
-        </div>
-      </div>
-
-      <div class="kidGrid">
-        <div class="kidCell">
-          <b>Email</b>
-          <div class="kidValue">${safeText(d.email || "—")}</div>
-        </div>
-
-        <div class="kidCell">
-          <b>Chromebook #</b>
-          <div class="kidValue">${safeText(d.chromebookNumber || "—")}</div>
-        </div>
-
-        <div class="kidCell">
-          <b>Password</b>
-          <div class="kidValue">${pwDisplay} ${pwNote}</div>
-        </div>
-
-        <div class="kidCell noteCell">
-  <b>Note</b>
-  <div class="kidValue">${safeText(d.note || "—")}</div>
-</div>
-
-      </div>
-    </div>
-  `;
-}
-
-// ========================
-// PRINT HTML (kid style) - prints ONLY #printRoot
-// ========================
-function renderPrintHTML(d){
-  const ini = initials(d.name);
-  const table = tableLabel(d.tableColor);
+  // PW: show locked bullets unless teacher unlocked
   const pwDisplay = pwUnlocked ? (d.pw || "—") : "••••••••";
+  const pwNote = (!pwUnlocked && mode === "screen") ? `<span class="stripLock">(Locked)</span>` : "";
 
   return `
-    <div class="printCard kidPrint">
+    <div class="stripCard kidStrip">
+      <div class="stripBar"></div>
+
       <div class="stripRow">
         <div class="stripAvatar" aria-hidden="true">${safeText(ini)}</div>
 
         <div class="stripMain">
-          <p class="stripName">${safeText(d.name || "—")}</p>
-          <p class="stripLine"># ${safeText(d.studentNumber || "—")} · ${safeText(d.section || "—")}</p>
-          <p class="stripLine">Email: ${safeText(d.email || "—")}</p>
+          <div class="stripName">${safeText(d.name || "—")}</div>
+          <div class="stripLine"># ${safeText(d.studentNumber || "—")} · ${safeText(d.section || "—")}</div>
+          <div class="stripLine">Email: ${safeText(d.email || "—")}</div>
+          <div class="stripLine">Note: ${safeText(d.note || "—")}</div>
         </div>
 
         <div class="stripMeta">
           <div class="stripPill">TABLE ${safeText(table)}</div>
           <div class="stripTiny">CB: ${safeText(d.chromebookNumber || "—")}</div>
-          <div class="stripTiny">PW: ${safeText(pwDisplay)}</div>
+          <div class="stripTiny">PW: ${safeText(pwDisplay)} ${pwNote}</div>
         </div>
       </div>
     </div>
   `;
 }
+
+function renderCardHTML(d){
+  return renderStripHTML(d, "screen");
+}
+
+function renderPrintHTML(d){
+  return renderStripHTML(d, "print");
+}
+
 
 
 function showCard(d){
