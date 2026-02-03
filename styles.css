@@ -22,6 +22,12 @@
   /* layout helpers */
   --gap: 14px;
   --pad: clamp(12px, 1.8vw, 22px);
+
+  /* kid palette (merged; no duplicate :root) */
+  --kidA: #ff7ab6;
+  --kidB: #7bdcff;
+  --kidC: #ffe07a;
+  --kidInk: #122033;
 }
 
 *{ box-sizing:border-box; }
@@ -138,7 +144,6 @@ h1{ margin:0; font-size:28px; letter-spacing:.2px; }
   gap: var(--gap);
   align-items:start;
 
-  /* ✅ prevents right cut + uses space */
   grid-template-columns: minmax(360px, 480px) minmax(0, 1fr);
 }
 
@@ -171,10 +176,8 @@ h3{ margin:0 0 8px; font-size:16px; }
   overflow:auto;
 }
 
-/* Each field wrapper (your HTML uses .field) */
 .field{ display:flex; flex-direction:column; gap:6px; }
 
-/* form spacing */
 #studentForm{
   display:flex;
   flex-direction:column;
@@ -278,7 +281,7 @@ input:focus,select:focus{
 .eyeBtn:hover{ transform: translateY(-1px); box-shadow: 0 14px 24px rgba(0,0,0,.10); }
 
 /* =========================
-   CSV IMPORT (FIXED layout)
+   CSV IMPORT
 ========================= */
 .importBox code{
   background:#f1f5f9;
@@ -293,8 +296,6 @@ input:focus,select:focus{
   align-items:flex-end;
   flex-wrap:wrap;
   margin-top:10px;
-
-  /* ✅ prevents “pushing out” */
   max-width:100%;
 }
 
@@ -312,24 +313,17 @@ input:focus,select:focus{
 .importActions{
   display:flex;
   gap:10px;
-  flex: 1 1 260px;     
+  flex: 1 1 260px;
   justify-content:flex-end;
   flex-wrap:wrap;
   max-width:100%;
 }
 
-.importActions .btn{
-  white-space:nowrap;
-}
+.importActions .btn{ white-space:nowrap; }
 
 @media (max-width: 520px){
-  .importActions{
-    justify-content:stretch;
-  }
-  .importActions .btn{
-    flex: 1 1 100%;
-    width:100%;
-  }
+  .importActions{ justify-content:stretch; }
+  .importActions .btn{ flex: 1 1 100%; width:100%; }
 }
 
 /* =========================
@@ -366,7 +360,6 @@ input:focus,select:focus{
 
 .foot{ margin:0 0 10px; }
 
-/* scroll container */
 .listBody{
   flex:1;
   min-height:0;
@@ -438,7 +431,7 @@ tbody td:nth-child(8){
 }
 
 /* =========================
-   MODAL
+   MODAL (no scroll)
 ========================= */
 .modal{
   position: fixed;
@@ -452,12 +445,11 @@ tbody td:nth-child(8){
 }
 .modal.show{ display:flex; }
 
-/* =========================
-   MODAL (smaller)
-========================= */
 .modalPanel{
-  width: min(520px, 92vw);     /* ✅ smaller than before */
-  max-height: 66vh;            /* ✅ shorter */
+  width: min(520px, 92vw);
+  height: auto;
+  max-height: none;          /* ✅ no forced height */
+
   background: rgba(255,255,255,.94);
   border: 1px solid rgba(18,32,51,.14);
   border-radius: 18px;
@@ -468,20 +460,27 @@ tbody td:nth-child(8){
 }
 
 .modalHeader{
-  padding: 10px 12px;         
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(18,32,51,.10);
+  background: rgba(248,250,252,.75);
 }
+.modalHeader h3{ margin:0; }
 
 .modalBody{
-  padding: 12px;               
-  max-height: 40vh;            
-  overflow: auto;
+  padding: 12px;
+  overflow: visible;         /* ✅ no scroll */
+  max-height: none;          /* ✅ no scroll */
   background:#fff;
 }
 
 .modalFooter{
-  padding: 10px 12px;          
+  padding: 10px 12px;
+  border-top: 1px solid rgba(18,32,51,.10);
+  background: rgba(248,250,252,.7);
 }
-
 
 .iconBtn{
   border:1px solid rgba(18,32,51,.12);
@@ -495,7 +494,7 @@ tbody td:nth-child(8){
 }
 .iconBtn:hover{ transform: translateY(-1px); box-shadow: 0 14px 24px rgba(0,0,0,.10); }
 
-/* Screen-reader only label */
+/* Screen-reader only */
 .srOnly{
   position:absolute !important;
   width:1px; height:1px;
@@ -503,16 +502,10 @@ tbody td:nth-child(8){
   overflow:hidden; clip:rect(0,0,0,0);
   white-space:nowrap; border:0;
 }
-/* =========================
-   KID CARD DESIGN (MODAL + PRINT)
-========================= */
-:root{
-  --kidA: #ff7ab6;
-  --kidB: #7bdcff;
-  --kidC: #ffe07a;
-  --kidInk: #122033;
-}
 
+/* =========================
+   KID CARD (compact + arranged)
+========================= */
 .kidHeader{
   background: linear-gradient(90deg, rgba(255,122,182,.45), rgba(123,220,255,.45), rgba(255,224,122,.45));
 }
@@ -525,111 +518,118 @@ tbody td:nth-child(8){
     #fff;
 }
 
-/* Card container inside modal */
 .studentCard.kidCard{
   border: 2px dashed rgba(18,32,51,.20);
-  border-radius: 24px;
+  border-radius: 20px;
   background: #fff;
-  padding: 16px;
+  padding: 12px;                 /* ✅ tighter */
   box-shadow: 0 12px 28px rgba(0,0,0,.10);
   position: relative;
   overflow: hidden;
 }
 
-/* Decorative top strip */
 .studentCard.kidCard::before{
   content:"";
   position:absolute;
   left:0; right:0; top:0;
-  height: 10px;
+  height: 9px;                   /* ✅ slightly thinner */
   background: linear-gradient(90deg, var(--kidA), var(--kidB), var(--kidC));
 }
 
-/* Layout header row: avatar + name */
 .kidTop{
   display:flex;
   align-items:center;
-  gap:12px;
-  padding-top: 8px; /* space under strip */
-  margin-bottom: 10px;
+  gap:10px;
+  padding-top: 7px;
+  margin-bottom: 8px;
 }
 
 .kidAvatar{
-  width:52px;
-  height:52px;
-  border-radius: 999px;
+  width:44px; height:44px;       /* ✅ smaller */
+  border-radius:999px;
   display:grid;
   place-items:center;
   font-weight: 1000;
   letter-spacing: .5px;
   color: var(--kidInk);
   background:
-    radial-gradient(22px 22px at 30% 30%, rgba(255,255,255,.9), transparent 60%),
+    radial-gradient(18px 18px at 30% 30%, rgba(255,255,255,.9), transparent 60%),
     linear-gradient(135deg, rgba(255,122,182,.55), rgba(123,220,255,.55));
   border: 2px solid rgba(18,32,51,.10);
+  font-size: 14px;
 }
 
 .kidName{
-  font-size: 20px;
+  font-size: 16px;               /* ✅ smaller */
   font-weight: 1000;
   letter-spacing: .2px;
   margin:0;
   line-height:1.1;
+  max-width: 280px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
+
 .kidLine{
   margin:2px 0 0;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* Sticker badge */
 .kidSticker{
   margin-left:auto;
   display:inline-flex;
   align-items:center;
   gap:8px;
-  padding:8px 12px;
-  border-radius: 999px;
+  padding:6px 10px;              /* ✅ tighter */
+  border-radius:999px;
   border: 2px solid rgba(18,32,51,.10);
   background: rgba(255,255,255,.95);
   box-shadow: 0 10px 18px rgba(0,0,0,.08);
   font-weight: 1000;
-  font-size: 12px;
+  font-size: 11px;
+  white-space:nowrap;
 }
 
-/* Details grid */
+/* ✅ compact grid with controlled text */
 .kidGrid{
   display:grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px 14px;
-  font-size: 14px;
+  gap: 8px 12px;
+  font-size: 12.5px;
 }
 
 .kidCell b{
   display:block;
-  font-size: 11px;
+  font-size: 10px;
   color: rgba(102,116,136,.95);
   font-weight: 900;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 
 .kidValue{
-  font-weight: 800;
+  font-weight: 850;
+  line-height: 1.15;
+  white-space: nowrap;           /* ✅ prevents tall rows */
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* Make long text wrap nicely */
-.kidValue.wrap{
-  word-break: break-word;
+/* ✅ only NOTE allowed to wrap (max 2 lines) */
+.kidCell.noteCell .kidValue{
   white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-
-/* =========================
-   PRINT
-========================= */
 /* =========================
    PRINT (strip style)
-   prints ONLY #printRoot
 ========================= */
 @media print{
   body{
@@ -643,10 +643,9 @@ tbody td:nth-child(8){
 
   @page{ margin: 0.3in; }
 
-  /* ✅ Strip size (like a name tag) */
   .printCard.kidPrint{
     width: 3.5in;
-    height: 1.15in;              /* ✅ strip height */
+    height: 1.15in;
     border-radius: 14px;
     border: 2px solid #111;
     background:#fff;
@@ -668,7 +667,7 @@ tbody td:nth-child(8){
     display:flex;
     align-items:center;
     gap:10px;
-    padding-top: 7px;            /* space under strip bar */
+    padding-top: 7px;
     height:100%;
   }
 
@@ -735,7 +734,6 @@ tbody td:nth-child(8){
     white-space:nowrap;
   }
 }
-
 
 /* =========================
    MOBILE
