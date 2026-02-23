@@ -254,7 +254,7 @@ function renderStripCardHTML(d){
             <span class="dot ${okColor}"></span>
             TABLE ${safeText(table)}
           </div>
-          <div class="stripTiny">CB: <b>${cb}</b></div>
+          <div class="stripTiny">Seat #: <b>${cb}</b></div>
           <div class="stripTiny">PW: <b>${safeText(pwDisplay)}</b> ${pwLock}</div>
         </div>
       </div>
