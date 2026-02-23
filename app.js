@@ -37,7 +37,7 @@ const emailEl = el("email");
 const pwEl = el("pw");
 const pwEyeBtn = el("pwEyeBtn");
 const tableColorEl = el("tableColor");
-const chromebookNumberEl = el("chromebookNumber");
+const seatNumberEl = el("seatNumber");
 const noteEl = el("note");
 
 const saveBtn = el("saveBtn");
@@ -169,7 +169,7 @@ function setMode(mode){
 
 function resetForm(){
   if(studentForm) studentForm.reset();
-  if(chromebookNumberEl) chromebookNumberEl.value = "";
+  if(seatNumberEl) seatNumberEl.value = "";
   if(noteEl) noteEl.value = "";
   if(pwEl) pwEl.type = "password";
 }
@@ -185,7 +185,7 @@ function normalizeRow(obj){
     email: (obj.email ?? "").toString().trim(),
     pw: (obj.pw ?? "").toString().trim(),
     tableColor: normalizeColor(obj.tableColor),
-    chromebookNumber: (obj.chromebookNumber ?? "").toString().trim(),
+    seatNumber: (obj.seatNumber ?? "").toString().trim(),
     note: (obj.note ?? "").toString().trim(),
   };
 }
@@ -232,7 +232,7 @@ function renderStripCardHTML(d){
 
   const line1 = `# ${safeText(d.studentNumber || "—")} · ${safeText(d.section || "—")}`;
   const email = safeText(d.email || "—");
-  const cb = safeText(d.chromebookNumber || "—");
+  const cb = safeText(d.seatNumber || "—");
   const note = safeText(d.note || "—");
 
   return `
@@ -312,7 +312,7 @@ function getFilteredList(){
   return cache.filter(d => {
     const hay = [
       d.studentNumber, d.name, d.section, d.email,
-      d.tableColor, d.chromebookNumber, d.note, d.pw
+      d.tableColor, d.seatNumber, d.note, d.pw
     ].join(" ").toLowerCase();
     return hay.includes(q);
   });
@@ -397,7 +397,7 @@ async function upsertStudent(){
     email: emailEl?.value,
     pw: pwEl?.value,
     tableColor: tableColorEl?.value,
-    chromebookNumber: chromebookNumberEl?.value,
+    seatNumber: seatNumberEl?.value,
     note: noteEl?.value
   });
 
@@ -446,7 +446,7 @@ async function loadIntoForm(studentNumber){
   if(emailEl) emailEl.value = d.email || "";
   if(pwEl) pwEl.value = d.pw || "";
   if(tableColorEl) tableColorEl.value = d.tableColor || "red";
-  if(chromebookNumberEl) chromebookNumberEl.value = d.chromebookNumber || "";
+  if(seatNumberEl) seatNumberEl.value = d.seatNumber || "";
   if(noteEl) noteEl.value = d.note || "";
 
   setMode("edit");
@@ -486,7 +486,7 @@ function render(list){
         <td>${safeText(d.email)}</td>
         <td>${pwCell}</td>
         <td>${colorBadge(d.tableColor)}</td>
-        <td>${safeText(d.chromebookNumber)}</td>
+        <td>${safeText(d.seatNumber)}</td>
         <td>${safeText(d.note)}</td>
         <td style="text-align:right; white-space:nowrap;">
           <button class="btn" data-edit="${sn}" type="button">Edit</button>
@@ -509,7 +509,7 @@ function applySearch(){
   const filtered = cache.filter(d => {
     const hay = [
       d.studentNumber, d.name, d.section, d.email,
-      d.tableColor, d.chromebookNumber, d.note,
+      d.tableColor, d.seatNumber, d.note,
       d.pw
     ].join(" ").toLowerCase();
     return hay.includes(q);
@@ -592,7 +592,7 @@ async function importCSVFile(file){
   if(rows.length < 2) throw new Error("CSV has no data rows.");
 
   const header = rows[0].map(h => h.trim());
-  const needed = ["studentNumber","name","section","email","pw","tableColor","chromebookNumber","note"];
+  const needed = ["studentNumber","name","section","email","pw","tableColor","seatNumber","note"];
 
   const idx = {};
   header.forEach((h, i) => idx[h] = i);
@@ -785,7 +785,7 @@ window.addEventListener("offline", () => setStatus("Offline", false));
 if(downloadTemplateBtn){
   downloadTemplateBtn.addEventListener("click", () => {
     const template =
-`studentNumber,name,section,email,pw,tableColor,chromebookNumber,note
+`studentNumber,name,section,email,pw,tableColor,seatNumber,note
 20260012,Alex Santos,P3-Ruby,alex@email.com,SamplePW,red,14,Needs charger
 20260013,Mia Cruz,P3-Ruby,mia@email.com,,blue,7,
 `;
