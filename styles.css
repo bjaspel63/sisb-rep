@@ -654,6 +654,59 @@ tbody td:nth-child(8){
   .stripLine{ font-size: 11px; }
 }
 
+/* =========================
+   CARD GRID VIEW
+========================= */
+.cardGrid{
+  display:grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap:12px;
+  padding:10px;
+}
+
+/* Student card */
+.studentCard{
+  border-radius:16px;
+  padding:14px;
+  background:#fff;
+  border:2px solid rgba(18,32,51,.12);
+  box-shadow: 0 10px 20px rgba(0,0,0,.08);
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+
+.studentCard:hover{
+  transform: translateY(-3px);
+  box-shadow: 0 16px 28px rgba(0,0,0,.12);
+}
+
+/* color top bar */
+.studentCard .colorBar{
+  height:6px;
+  border-radius:999px;
+}
+
+.color-red{ background: var(--red); }
+.color-blue{ background: var(--blue); }
+.color-yellow{ background: var(--yellow); }
+
+.studentName{
+  font-weight:1000;
+  font-size:15px;
+}
+
+.studentNumber{
+  font-size:12px;
+  color:var(--muted);
+}
+
+.studentMeta{
+  font-size:12px;
+  font-weight:800;
+}
+
 @media print{
 
   *{
