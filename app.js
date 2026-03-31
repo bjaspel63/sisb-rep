@@ -24,13 +24,40 @@ const db = getFirestore(app);
 // ========================
 const el = (id) => document.getElementById(id);
 
+const statusPill = el("statusPill");
+const teacherPill = el("teacherPill");
+const setTeacherPassBtn = el("setTeacherPassBtn");
+const lockBtn = el("lockBtn");
+
+const formTitle = el("formTitle");
+const studentForm = el("studentForm");
+
+const studentNumberEl = el("studentNumber");
+const nameEl = el("name");
+const sectionEl = el("section");
+const emailEl = el("email");
+const pwEl = el("pw");
+const pwEyeBtn = el("pwEyeBtn");
+const tableColorEl = el("tableColor");
+const seatNumberEl = el("seatNumber");
+const noteEl = el("note");
+
+const saveBtn = el("saveBtn");
+const cancelBtn = el("cancelBtn");
+const deleteBtn = el("deleteBtn");
+
 const rowsEl = el("rows");
 const countLine = el("countLine");
-const searchEl = el("search");
 
-const cardViewBtn = el("cardViewBtn");
-const cardGrid = el("cardGrid");
-const tableWrap = document.querySelector(".tableWrap");
+const searchEl = el("search");
+const refreshBtn = el("refreshBtn");
+
+const csvFileEl = el("csvFile");
+const importBtn = el("importBtn");
+const downloadTemplateBtn = el("downloadTemplateBtn");
+const importStatusEl = el("importStatus");
+
+const printRootEl = el("printRoot");
 
 const cardModal = el("cardModal");
 const cardModalBody = el("cardModalBody");
@@ -39,14 +66,23 @@ const closeCardModalBtn = el("closeCardModalBtn");
 const bulkPrintFilteredBtn = el("bulkPrintFilteredBtn");
 const bulkPrintAllBtn = el("bulkPrintAllBtn");
 
-const printRootEl = el("printRoot");
+// 🔥 CARD VIEW
+const cardViewBtn = el("cardViewBtn");
+const cardGrid = el("cardGrid");
+const tableWrap = document.querySelector(".tableWrap");
 
 // ========================
 // STATE
 // ========================
+let editingId = null;
+let liveUnsub = null;
 let cache = [];
 let selectedForCard = null;
+
+let pwUnlocked = false;
 let isCardView = false;
+
+const TEACHER_HASH_KEY = "teacher_pw_hash_v1";
 
 // ========================
 // HELPERS
@@ -57,15 +93,47 @@ function safeText(v){
   }[c]));
 }
 
-function normalizeColor(c){
-  c = (c || "").toLowerCase();
+function normalizeColor(color){
+  const c = (color || "").toLowerCase().trim();
   return ["red","blue","yellow"].includes(c) ? c : "red";
+}
+
+// ========================
+// CARD GRID VIEW
+// ========================
+function renderCardGrid(list){
+  if(!cardGrid) return;
+
+  if(!list.length){
+    cardGrid.innerHTML = `<div class="muted">No students.</div>`;
+    countLine.textContent = "0 students";
+    return;
+  }
+
+  cardGrid.innerHTML = list.map(d => {
+    const color = normalizeColor(d.tableColor);
+
+    return `
+      <div class="studentCard" data-card="${d.studentNumber}">
+        <div class="colorBar color-${color}"></div>
+        <div class="studentName">${safeText(d.name)}</div>
+        <div class="studentNumber"># ${safeText(d.studentNumber)}</div>
+        <div class="studentMeta">${safeText(d.section)}</div>
+        <div class="studentMeta">Seat: ${safeText(d.seatNumber || "—")}</div>
+        <div class="studentMeta">${color.toUpperCase()}</div>
+      </div>
+    `;
+  }).join("");
+
+  countLine.textContent = `${list.length} student${list.length === 1 ? "" : "s"}`;
 }
 
 // ========================
 // TABLE RENDER
 // ========================
 function render(list){
+  if(!rowsEl) return;
+
   if(!list.length){
     rowsEl.innerHTML = `<tr><td colspan="9">No students</td></tr>`;
     countLine.textContent = "0 students";
@@ -82,41 +150,9 @@ function render(list){
       <td>${safeText(d.tableColor)}</td>
       <td>${safeText(d.seatNumber)}</td>
       <td>${safeText(d.note)}</td>
-      <td>
-        <button data-card="${d.studentNumber}">Card</button>
-      </td>
+      <td><button data-card="${d.studentNumber}">Card</button></td>
     </tr>
   `).join("");
-
-  countLine.textContent = `${list.length} students`;
-}
-
-// ========================
-// 🔥 CARD GRID VIEW
-// ========================
-function renderCardGrid(list){
-  if(!cardGrid) return;
-
-  if(!list.length){
-    cardGrid.innerHTML = `<div>No students</div>`;
-    countLine.textContent = "0 students";
-    return;
-  }
-
-  cardGrid.innerHTML = list.map(d => {
-    const color = normalizeColor(d.tableColor);
-
-    return `
-      <div class="studentCard" data-card="${d.studentNumber}">
-        <div class="colorBar color-${color}"></div>
-        <div><b>${safeText(d.name)}</b></div>
-        <div># ${safeText(d.studentNumber)}</div>
-        <div>${safeText(d.section)}</div>
-        <div>Seat: ${safeText(d.seatNumber || "-")}</div>
-        <div>${color.toUpperCase()}</div>
-      </div>
-    `;
-  }).join("");
 
   countLine.textContent = `${list.length} students`;
 }
@@ -125,7 +161,7 @@ function renderCardGrid(list){
 // SEARCH
 // ========================
 function applySearch(){
-  const q = (searchEl.value || "").toLowerCase();
+  const q = (searchEl?.value || "").toLowerCase();
 
   const filtered = cache.filter(d =>
     Object.values(d).join(" ").toLowerCase().includes(q)
@@ -177,24 +213,13 @@ function closeModal(){
 }
 
 // ========================
-// PRINT
-// ========================
-function printBulk(list){
-  printRootEl.innerHTML = list.map(d => `
-    <div>${safeText(d.name)} (${safeText(d.studentNumber)})</div>
-  `).join("");
-
-  window.print();
-}
-
-// ========================
 // FIRESTORE LIVE
 // ========================
 function startLive(){
   const qy = query(collection(db, "students"), orderBy("studentNumber"));
 
-  onSnapshot(qy, snap => {
-    cache = snap.docs.map(d => d.data());
+  liveUnsub = onSnapshot(qy, (snap) => {
+    cache = snap.docs.map(s => s.data());
     applySearch();
   });
 }
@@ -211,7 +236,7 @@ if(searchEl){
 }
 
 if(rowsEl){
-  rowsEl.addEventListener("click", e => {
+  rowsEl.addEventListener("click", (e) => {
     const id = e.target.getAttribute("data-card");
     if(!id) return;
 
@@ -221,7 +246,7 @@ if(rowsEl){
 }
 
 if(cardGrid){
-  cardGrid.addEventListener("click", e => {
+  cardGrid.addEventListener("click", (e) => {
     const card = e.target.closest("[data-card]");
     if(!card) return;
 
@@ -236,11 +261,11 @@ if(closeCardModalBtn){
 }
 
 if(bulkPrintFilteredBtn){
-  bulkPrintFilteredBtn.addEventListener("click", () => printBulk(cache));
+  bulkPrintFilteredBtn.addEventListener("click", () => window.print());
 }
 
 if(bulkPrintAllBtn){
-  bulkPrintAllBtn.addEventListener("click", () => printBulk(cache));
+  bulkPrintAllBtn.addEventListener("click", () => window.print());
 }
 
 // ========================
